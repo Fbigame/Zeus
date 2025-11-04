@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld('fileAPI', {
   // 文件夹操作
   scanDirectories: (dirPath) => ipcRenderer.invoke('scan-directories', dirPath),
   
+  // 获取默认数据路径
+  getDefaultDataPath: () => ipcRenderer.invoke('get-default-data-path'),
+  
   // 文件对话框
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
   showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options)

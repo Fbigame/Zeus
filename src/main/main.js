@@ -2,6 +2,17 @@ const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const path = require('path')
 const fs = require('fs').promises
 
+// 获取数据目录路径（开发时和打包后）
+function getDataPath() {
+  if (app.isPackaged) {
+    // 打包后，data目录在resources目录下
+    return path.join(process.resourcesPath, 'data')
+  } else {
+    // 开发时，data目录在项目根目录下
+    return path.join(__dirname, '..', '..', 'data')
+  }
+}
+
 // 禁用 GPU 相关功能来避免性能问题
 app.commandLine.appendSwitch('--disable-features', 'VizDisplayCompositor');
 app.commandLine.appendSwitch('--disable-dev-shm-usage');
@@ -78,6 +89,19 @@ const createMenu = () => {
   Menu.setApplicationMenu(menu)
 }
 
+// IPC 处理器 - 获取默认数据路径
+ipcMain.handle('get-default-data-path', async () => {
+  try {
+    const dataPath = getDataPath()
+    // 检查data目录是否存在
+    await fs.access(dataPath)
+    return { success: true, path: dataPath }
+  } catch (error) {
+    console.error('获取默认数据路径失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
 ipcMain.handle('scan-directories', async (event, dirPath) => {
   try {
     const fullPath = path.resolve(dirPath);
@@ -96,9 +120,21 @@ ipcMain.handle('scan-directories', async (event, dirPath) => {
 // IPC 处理器 - 文件操作
 ipcMain.handle('read-file', async (event, filePath) => {
   try {
-    const data = await fs.readFile(filePath, 'utf8');
+    let actualPath = filePath;
+    
+    // 如果是相对路径且以data开头，转换为绝对路径
+    if (filePath.startsWith('./data/') || filePath.startsWith('data/')) {
+      const dataPath = getDataPath();
+      // 移除路径开头的 data/ 部分，因为 dataPath 已经指向 data 目录
+      const relativePath = filePath.replace(/^\.?\/data\//, '').replace(/^data\//, '');
+      actualPath = path.join(dataPath, relativePath);
+    }
+    
+    console.log('读取文件:', { originalPath: filePath, actualPath, dataPath: getDataPath() });
+    const data = await fs.readFile(actualPath, 'utf8');
     return { success: true, data };
   } catch (error) {
+    console.error('文件读取失败:', { filePath, actualPath, error: error.message });
     return { success: false, error: error.message };
   }
 });

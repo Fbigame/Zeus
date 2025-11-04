@@ -4,6 +4,7 @@ class VersionCompareSystem {
         this.availableVersions = [];
         this.oldVersionData = null;
         this.newVersionData = null;
+        this.dataPath = './data'; // 默认数据路径
         this.compareResults = {
             added: [],
             modified: [],
@@ -86,8 +87,26 @@ class VersionCompareSystem {
             
             if (window.fileAPI) {
                 console.log('🔧 使用Electron API扫描文件夹');
+                
+                // 首先尝试获取默认数据路径
+                let scanPath = './data';
+                try {
+                    const defaultPathResult = await window.fileAPI.getDefaultDataPath();
+                    if (defaultPathResult.success) {
+                        scanPath = defaultPathResult.path;
+                        this.dataPath = scanPath; // 存储数据路径供后续使用
+                        console.log('📍 使用默认数据路径:', scanPath);
+                        document.getElementById('dataPathInfo').textContent = `📍 数据路径: ${scanPath}`;
+                    } else {
+                        console.log('📍 使用相对数据路径:', scanPath);
+                        document.getElementById('dataPathInfo').textContent = `📍 数据路径: ${scanPath} (相对路径)`;
+                    }
+                } catch (error) {
+                    console.warn('⚠️ 获取默认路径失败，使用相对路径:', error);
+                }
+                
                 // 通过Electron API读取data文件夹
-                const result = await window.fileAPI.scanDirectories('./data');
+                const result = await window.fileAPI.scanDirectories(scanPath);
                 console.log('📊 扫描结果:', result);
                 
                 if (result.success) {
@@ -336,8 +355,9 @@ class VersionCompareSystem {
         console.log(`📂 开始加载版本 ${version} 的数据`);
         
         try {
-            const cardPath = `./data/${version}/CARD.json`;
-            const tagPath = `./data/${version}/CARD_TAG.json`;
+            // 使用简单的相对路径，让主进程处理实际路径转换
+            const cardPath = `data/${version}/CARD.json`;
+            const tagPath = `data/${version}/CARD_TAG.json`;
             
             console.log(`🔍 尝试加载文件:`, { cardPath, tagPath });
             
