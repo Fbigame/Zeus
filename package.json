@@ -1,7 +1,7 @@
 {
   "name": "zeus",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/main/main.js",
   "scripts": {
     "start": "electron-forge start",
     "start-utf8": "node start-utf8.js",

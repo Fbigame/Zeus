@@ -2,19 +2,13 @@ const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const path = require('path')
 const fs = require('fs').promises
 
-// 禁用 GPU 和缓存相关功能来避免权限错误
-app.commandLine.appendSwitch('--disable-web-security');
+// 禁用 GPU 相关功能来避免性能问题
 app.commandLine.appendSwitch('--disable-features', 'VizDisplayCompositor');
 app.commandLine.appendSwitch('--disable-dev-shm-usage');
-app.commandLine.appendSwitch('--no-sandbox');
-app.commandLine.appendSwitch('--disable-setuid-sandbox');
-app.commandLine.appendSwitch('--disable-gpu-sandbox');
 app.commandLine.appendSwitch('--disable-software-rasterizer');
 app.commandLine.appendSwitch('--disable-background-timer-throttling');
 app.commandLine.appendSwitch('--disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('--disable-renderer-backgrounding');
-app.commandLine.appendSwitch('--disable-field-trial-config');
-app.commandLine.appendSwitch('--disable-ipc-flooding-protection');
 
 let mainWindow
 
@@ -25,12 +19,11 @@ const createWindow = () => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js'),
-      webSecurity: false,
-      allowRunningInsecureContent: true,
-      experimentalFeatures: true
+      preload: path.join(__dirname, '..', 'preload', 'preload.js'),
+      webSecurity: true,
+      sandbox: false
     },
-    icon: path.join(__dirname, 'assets', 'icon.png'),
+    icon: path.join(__dirname, '..', '..', 'assets', 'icon.ico'),
     titleBarStyle: 'default',
     show: false,
     title: '版本对比工具'
@@ -42,7 +35,7 @@ const createWindow = () => {
     mainWindow.show();
   });
 
-  mainWindow.loadFile('index.html')
+  mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'))
 
   // 创建菜单
   createMenu()
@@ -101,40 +94,6 @@ ipcMain.handle('scan-directories', async (event, dirPath) => {
 });
 
 // IPC 处理器 - 文件操作
-ipcMain.handle('save-game-tags', async (event, data) => {
-  try {
-    const filePath = path.join(__dirname, 'data', 'GameTags.json');
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
-    return { success: true };
-  } catch (error) {
-    console.error('保存GameTags失败:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('load-game-tags', async () => {
-  try {
-    const filePath = path.join(__dirname, 'data', 'GameTags.json');
-    const data = await fs.readFile(filePath, 'utf8');
-    return { success: true, data: JSON.parse(data) };
-  } catch (error) {
-    console.error('加载GameTags失败:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('save-enum-data', async (event, enumType, data) => {
-  try {
-    // 这里可以保存到单独的配置文件
-    const filePath = path.join(__dirname, 'data', `${enumType}.json`);
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
-    return { success: true };
-  } catch (error) {
-    console.error(`保存${enumType}失败:`, error);
-    return { success: false, error: error.message };
-  }
-});
-
 ipcMain.handle('read-file', async (event, filePath) => {
   try {
     const data = await fs.readFile(filePath, 'utf8');
