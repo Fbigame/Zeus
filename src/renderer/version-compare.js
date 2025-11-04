@@ -63,6 +63,7 @@ class VersionCompareSystem {
         // 操作按钮
         document.getElementById('exportResultsBtn').addEventListener('click', () => this.exportResults());
         document.getElementById('newCompareBtn').addEventListener('click', () => this.resetCompare());
+        document.getElementById('backToCompareBtn').addEventListener('click', () => this.resetCompare());
         
         // 导出CardID按钮
         document.getElementById('exportTxtBtn').addEventListener('click', () => this.exportCardIds('txt'));

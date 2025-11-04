@@ -158,6 +158,28 @@
             background-color: #8e44ad;
         }
 
+        .results-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            padding: 8px 16px;
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background-color: #7f8c8d;
+        }
+
         .progress-container {
             background: white;
             padding: 25px;
@@ -529,7 +551,10 @@
         <section id="compareResultsSection" class="compare-results-section" style="display: none;">
             <div class="results-container">
                 <div class="results-header">
-                    <h2>📊 对比结果</h2>
+                    <div class="results-header-top">
+                        <h2>📊 对比结果</h2>
+                        <button id="backToCompareBtn" class="back-btn">← 返回选择</button>
+                    </div>
                     <div class="results-summary" id="resultsSummary">
                         <!-- 结果统计将在这里显示 -->
                     </div>
