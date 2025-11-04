@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>炉石传说版本对比</title>
+    <style>
+        /* 简洁的浅色主题样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .version-container {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .version-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 25px;
+        }
+
+        .version-item h3 {
+            color: #2980b9;
+            margin-bottom: 10px;
+        }
+
+        .version-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .version-select:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .version-info {
+            margin-top: 10px;
+            padding: 12px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .version-info div {
+            margin-bottom: 5px;
+        }
+
+        .version-info div:last-child {
+            margin-bottom: 0;
+        }
+
+        .compare-controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .compare-btn, .refresh-btn, .export-btn, .new-compare-btn {
+            padding: 12px 24px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .compare-btn {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .compare-btn:hover:not(:disabled) {
+            background-color: #229954;
+        }
+
+        .compare-btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .refresh-btn {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .refresh-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .export-btn {
+            background-color: #e67e22;
+            color: white;
+        }
+
+        .export-btn:hover {
+            background-color: #d35400;
+        }
+
+        .new-compare-btn {
+            background-color: #9b59b6;
+            color: white;
+        }
+
+        .new-compare-btn:hover {
+            background-color: #8e44ad;
+        }
+
+        .progress-container {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .results-container {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .results-tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .result-tab {
+            padding: 12px 20px;
+            border: none;
+            background: #f8f9fa;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            transition: all 0.3s ease;
+        }
+
+        .result-tab.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .result-tab:hover:not(.active) {
+            background: #e9ecef;
+        }
+
+        .export-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #3498db;
+        }
+
+        .export-section h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .export-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        #exportTxtBtn {
+            background-color: #27ae60;
+        }
+
+        #exportTxtBtn:hover {
+            background-color: #229954;
+        }
+
+        #exportExcelBtn {
+            background-color: #e67e22;
+        }
+
+        #exportExcelBtn:hover {
+            background-color: #d35400;
+        }
+
+        .result-content {
+            display: none;
+            min-height: 200px;
+        }
+
+        .result-content.active {
+            display: block;
+        }
+
+        .card-compare-item {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 6px 6px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .card-compare-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .card-compare-item.added {
+            border-left-color: #27ae60;
+        }
+
+        .card-compare-item.modified {
+            border-left-color: #f39c12;
+        }
+
+        .card-compare-item.deleted {
+            border-left-color: #e74c3c;
+        }
+
+        .card-compare-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .card-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #2c3e50;
+        }
+
+        .card-id {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .card-changes {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .change-item {
+            text-align: center;
+        }
+
+        .change-label {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .change-value {
+            font-weight: bold;
+        }
+
+        .new-value {
+            color: #27ae60;
+        }
+
+        .old-value {
+            color: #e74c3c;
+        }
+
+        .arrow {
+            color: #3498db;
+            margin: 0 8px;
+        }
+
+        .results-actions {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .close-btn:hover {
+            color: #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .version-pair {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .card-changes {
+                grid-template-columns: 1fr;
+            }
+            
+            .export-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🃏 炉石传说版本对比</h1>
+
+        <!-- 版本选择区域 -->
+        <section class="version-selection-section">
+            <div class="version-container">
+                <h2>📂 版本选择</h2>
+                <div id="versionDetection" class="version-detection">
+                    <div class="detection-status">
+                        <span id="detectionStatus">正在检测版本文件夹...</span>
+                    </div>
+                </div>
+                
+                <div id="versionSelector" class="version-selector" style="display: none;">
+                    <div class="version-pair">
+                        <div class="version-item">
+                            <h3>📦 旧版本</h3>
+                            <select id="oldVersionSelect" class="version-select">
+                                <option value="">请选择旧版本</option>
+                            </select>
+                            <div class="version-info" id="oldVersionInfo"></div>
+                        </div>
+                        
+                        <div class="version-item">
+                            <h3>🆕 新版本</h3>
+                            <select id="newVersionSelect" class="version-select">
+                                <option value="">请选择新版本</option>
+                            </select>
+                            <div class="version-info" id="newVersionInfo"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="compare-controls">
+                        <button id="startCompareBtn" class="compare-btn" disabled>🔍 开始对比</button>
+                        <button id="refreshVersionsBtn" class="refresh-btn">🔄 刷新版本</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 对比进度区域 -->
+        <section id="compareProgressSection" class="compare-progress-section" style="display: none;">
+            <div class="progress-container">
+                <h2>⚙️ 对比进行中</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">准备开始对比...</div>
+            </div>
+        </section>
+
+        <!-- 对比结果区域 -->
+        <section id="compareResultsSection" class="compare-results-section" style="display: none;">
+            <div class="results-container">
+                <div class="results-header">
+                    <h2>📊 对比结果</h2>
+                    <div class="results-summary" id="resultsSummary">
+                        <!-- 结果统计将在这里显示 -->
+                    </div>
+                </div>
+                
+                <div class="results-tabs">
+                    <button id="addedTab" class="result-tab active">➕ 新增卡牌</button>
+                    <button id="modifiedTab" class="result-tab">✏️ 修改卡牌</button>
+                    <button id="deletedTab" class="result-tab">🗑️ 删除卡牌</button>
+                </div>
+                
+                <!-- 导出功能区域 -->
+                <div class="export-section">
+                    <h3>📤 导出CardID</h3>
+                    <div class="export-controls">
+                        <button id="exportTxtBtn" class="export-btn">📄 导出TXT</button>
+                        <button id="exportExcelBtn" class="export-btn">📊 导出Excel</button>
+                    </div>
+                </div>
+                
+                <div class="results-content">
+                    <div id="addedCards" class="result-content active">
+                        <!-- 新增卡牌将在这里显示 -->
+                    </div>
+                    <div id="modifiedCards" class="result-content">
+                        <!-- 修改卡牌将在这里显示 -->
+                    </div>
+                    <div id="deletedCards" class="result-content">
+                        <!-- 删除卡牌将在这里显示 -->
+                    </div>
+                </div>
+                
+                <div class="results-actions">
+                    <button id="exportResultsBtn" class="export-btn">💾 导出结果</button>
+                    <button id="newCompareBtn" class="new-compare-btn">🔄 新的对比</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 卡牌详情模态框 -->
+        <div id="cardModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalCardName">卡牌对比详情</h3>
+                    <button id="closeModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="cardCompareDetails">
+                        <!-- 卡牌对比详细信息将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="version-compare.js"></script>
+</body>
+</html>

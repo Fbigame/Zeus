@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>炉石传说版本对比系统</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="version-compare.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1>🃏 炉石传说版本对比系统</h1>
+                <p>对比不同版本间的卡牌变化和差异</p>
+            </div>
+            <nav class="nav-menu">
+                <button id="homeBtn" class="nav-btn active">🏠 版本对比</button>
+                <button id="adminBtn" class="nav-btn">⚙️ 管理</button>
+                <button id="aboutBtn" class="nav-btn">ℹ️ 关于</button>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            <!-- 版本选择区域 -->
+            <section class="version-selection-section">
+                <div class="version-container">
+                    <h2>📂 版本选择</h2>
+                    <div id="versionDetection" class="version-detection">
+                        <div class="detection-status">
+                            <div class="loading-spinner"></div>
+                            <span id="detectionStatus">正在检测版本文件夹...</span>
+                        </div>
+                    </div>
+                    
+                    <div id="versionSelector" class="version-selector" style="display: none;">
+                        <div class="version-pair">
+                            <div class="version-item">
+                                <h3>📦 旧版本</h3>
+                                <select id="oldVersionSelect" class="version-select">
+                                    <option value="">请选择旧版本</option>
+                                </select>
+                                <div class="version-info" id="oldVersionInfo"></div>
+                            </div>
+                            
+                            <div class="version-item">
+                                <h3>🆕 新版本</h3>
+                                <select id="newVersionSelect" class="version-select">
+                                    <option value="">请选择新版本</option>
+                                </select>
+                                <div class="version-info" id="newVersionInfo"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="compare-controls">
+                            <button id="startCompareBtn" class="compare-btn" disabled>🔍 开始对比</button>
+                            <button id="refreshVersionsBtn" class="refresh-btn">🔄 刷新版本</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 对比进度区域 -->
+            <section id="compareProgressSection" class="compare-progress-section" style="display: none;">
+                <div class="progress-container">
+                    <h2>⚙️ 对比进行中</h2>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">准备开始对比...</div>
+                </div>
+            </section>
+
+            <!-- 对比结果区域 -->
+            <section id="compareResultsSection" class="compare-results-section" style="display: none;">
+                <div class="results-container">
+                    <div class="results-header">
+                        <h2>📊 对比结果</h2>
+                        <div class="results-summary" id="resultsSummary">
+                            <!-- 结果统计将在这里显示 -->
+                        </div>
+                    </div>
+                    
+                    <div class="results-tabs">
+                        <button id="addedTab" class="result-tab active">➕ 新增卡牌</button>
+                        <button id="modifiedTab" class="result-tab">✏️ 修改卡牌</button>
+                        <button id="deletedTab" class="result-tab">🗑️ 删除卡牌</button>
+                    </div>
+                    
+                    <!-- 导出功能区域 -->
+                    <div class="export-section">
+                        <h3>📤 导出CardID</h3>
+                        <div class="export-controls">
+                            <button id="exportTxtBtn" class="export-btn">📄 导出TXT</button>
+                            <button id="exportExcelBtn" class="export-btn">📊 导出Excel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="results-content">
+                        <div id="addedCards" class="result-content active">
+                            <!-- 新增卡牌将在这里显示 -->
+                        </div>
+                        <div id="modifiedCards" class="result-content">
+                            <!-- 修改卡牌将在这里显示 -->
+                        </div>
+                        <div id="deletedCards" class="result-content">
+                            <!-- 删除卡牌将在这里显示 -->
+                        </div>
+                    </div>
+                    
+                    <div class="results-actions">
+                        <button id="exportResultsBtn" class="export-btn">💾 导出结果</button>
+                        <button id="newCompareBtn" class="new-compare-btn">🔄 新的对比</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 管理页面 -->
+        <div id="adminPanel" class="admin-panel" style="display: none;">
+            <div class="admin-container">
+                <h2>⚙️ 系统管理</h2>
+                
+                <!-- 版本管理 -->
+                <section class="admin-section">
+                    <h3>📂 版本管理</h3>
+                    <div class="admin-controls">
+                        <button id="scanVersionsBtn" class="admin-btn">🔍 扫描版本</button>
+                        <button id="addVersionBtn" class="admin-btn">➕ 添加版本</button>
+                        <button id="cleanVersionsBtn" class="admin-btn danger">🧹 清理无效版本</button>
+                    </div>
+                    
+                    <div id="versionList" class="version-list">
+                        <!-- 版本列表将在这里显示 -->
+                    </div>
+                </section>
+
+                <!-- GameTags管理 -->
+                <section class="admin-section">
+                    <h3>🏷️ GameTags 管理</h3>
+                    <div class="admin-controls">
+                        <button id="addGameTagBtn" class="admin-btn">➕ 添加标签</button>
+                        <button id="importGameTagBtn" class="admin-btn">📁 导入文件</button>
+                        <button id="exportGameTagBtn" class="admin-btn">💾 导出文件</button>
+                    </div>
+                    
+                    <div class="tag-editor">
+                        <div class="tag-search">
+                            <input type="text" id="tagSearchInput" placeholder="搜索标签名称或ID..." class="search-input">
+                        </div>
+                        <div id="gameTagsList" class="tags-list">
+                            <!-- GameTags列表将在这里显示 -->
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- 关于页面 -->
+        <div id="aboutPanel" class="about-panel" style="display: none;">
+            <div class="about-container">
+                <h2>ℹ️ 关于系统</h2>
+                <div class="about-content">
+                    <h3>炉石传说版本对比系统 v3.0</h3>
+                    <p>基于Electron构建的炉石传说版本数据对比分析工具</p>
+                    
+                    <h4>主要功能：</h4>
+                    <ul>
+                        <li>🔍 自动版本检测</li>
+                        <li>📊 智能数据对比</li>
+                        <li>➕ 新增卡牌识别</li>
+                        <li>✏️ 修改内容分析</li>
+                        <li>�️ 删除卡牌检测</li>
+                        <li>�💾 结果导出功能</li>
+                    </ul>
+                    
+                    <h4>技术栈：</h4>
+                    <ul>
+                        <li>Electron - 桌面应用框架</li>
+                        <li>JavaScript - 核心逻辑</li>
+                        <li>HTML5 & CSS3 - 用户界面</li>
+                        <li>JSON - 数据对比分析</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 卡牌详情模态框 -->
+        <div id="cardModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalCardName">卡牌对比详情</h3>
+                    <button id="closeModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="cardCompareDetails">
+                        <!-- 卡牌对比详细信息将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="version-compare.js"></script>
+</body>
+</html>
