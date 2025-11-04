@@ -110,7 +110,7 @@ class VersionCompareSystem {
                 this.autoSelectLatestVersions();
                 this.showVersionSelector();
             } else {
-                throw new Error('至少需要2个版本文件夹才能进行对比');
+                throw new Error('至少需要2个版本文件夹才能进行对比，请在data目录下添加以版本号命名的文件夹，并将dbf解包后的所有json文件放进版本文件夹内。');
             }
             
         } catch (error) {
