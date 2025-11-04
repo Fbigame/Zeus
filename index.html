@@ -190,18 +190,83 @@
             padding: 12px 20px;
             border: none;
             background: #f8f9fa;
+            color: #2c3e50;
             cursor: pointer;
             border-radius: 6px 6px 0 0;
             transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 14px;
+            border: 2px solid transparent;
         }
 
         .result-tab.active {
             background: #3498db;
             color: white;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
         }
 
         .result-tab:hover:not(.active) {
             background: #e9ecef;
+            border-color: #bdc3c7;
+            transform: translateY(-1px);
+        }
+
+        .results-summary {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .results-summary:empty::before {
+            content: "📊 等待对比结果...";
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 40px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 2px dashed #bdc3c7;
+            border-radius: 12px;
+            color: #6c757d;
+            font-size: 16px;
+            font-weight: 500;
+            width: 100%;
+            min-height: 80px;
+            box-sizing: border-box;
+            white-space: nowrap;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 15px 20px;
+            border-radius: 8px;
+            min-width: 120px;
+            white-space: nowrap;
+        }
+
+        .summary-item.added {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .summary-item.modified {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .summary-item.deleted {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .summary-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
         }
 
         .export-section {
