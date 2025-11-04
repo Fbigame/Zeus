@@ -174,17 +174,23 @@ class VersionCompareSystem {
     }
     
     // 版本选择事件
-    onVersionSelect() {
+    async onVersionSelect() {
         const oldVersion = document.getElementById('oldVersionSelect').value;
         const newVersion = document.getElementById('newVersionSelect').value;
         
-        // 更新版本信息
-        this.updateVersionInfo('oldVersionInfo', oldVersion);
-        this.updateVersionInfo('newVersionInfo', newVersion);
-        
-        // 启用/禁用对比按钮
+        // 立即禁用对比按钮
         const startBtn = document.getElementById('startCompareBtn');
-        startBtn.disabled = !oldVersion || !newVersion || oldVersion === newVersion;
+        startBtn.disabled = true;
+        
+        // 更新版本信息
+        const oldVersionValid = await this.updateVersionInfo('oldVersionInfo', oldVersion);
+        const newVersionValid = await this.updateVersionInfo('newVersionInfo', newVersion);
+        
+        // 只有当所有条件都满足时才启用对比按钮
+        const canCompare = oldVersion && newVersion && 
+                          oldVersion !== newVersion && 
+                          oldVersionValid && newVersionValid;
+        startBtn.disabled = !canCompare;
         
         if (oldVersion === newVersion && oldVersion) {
             alert('请选择不同的版本进行对比');
@@ -192,16 +198,58 @@ class VersionCompareSystem {
     }
     
     // 更新版本信息显示
-    updateVersionInfo(elementId, version) {
+    async updateVersionInfo(elementId, version) {
         const element = document.getElementById(elementId);
-        if (version) {
+        if (!version) {
+            element.innerHTML = '';
+            return false;
+        }
+        
+        // 检测必要文件是否存在
+        const cardPath = `./data/${version}/CARD.json`;
+        const tagPath = `./data/${version}/CARD_TAG.json`;
+        
+        try {
+            const [cardResult, tagResult] = await Promise.all([
+                window.fileAPI.readFile(cardPath),
+                window.fileAPI.readFile(tagPath)
+            ]);
+            
+            let status = '';
+            let statusClass = '';
+            const missingFiles = [];
+            
+            if (!cardResult.success) {
+                missingFiles.push('CARD.json');
+            }
+            if (!tagResult.success) {
+                missingFiles.push('CARD_TAG.json');
+            }
+            
+            const isValid = missingFiles.length === 0;
+            
+            if (isValid) {
+                status = '✅ 准备就绪';
+                statusClass = 'status-ready';
+            } else {
+                status = `❌ 缺少文件: ${missingFiles.join(', ')}`;
+                statusClass = 'status-error';
+            }
+            
             element.innerHTML = `
                 <div><strong>版本号:</strong> ${version}</div>
                 <div><strong>路径:</strong> ./data/${version}/</div>
-                <div><strong>状态:</strong> 准备就绪</div>
+                <div><strong>状态:</strong> <span class="${statusClass}">${status}</span></div>
             `;
-        } else {
-            element.innerHTML = '';
+            
+            return isValid;
+        } catch (error) {
+            element.innerHTML = `
+                <div><strong>版本号:</strong> ${version}</div>
+                <div><strong>路径:</strong> ./data/${version}/</div>
+                <div><strong>状态:</strong> <span class="status-error">❌ 检测失败: ${error.message}</span></div>
+            `;
+            return false;
         }
     }
     

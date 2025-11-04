@@ -222,6 +222,16 @@ input:focus, select:focus, textarea:focus {
     color: #7f8c8d;
 }
 
+.status-ready {
+    color: #27ae60 !important;
+    font-weight: bold;
+}
+
+.status-error {
+    color: #e74c3c !important;
+    font-weight: bold;
+}
+
 .compare-controls {
     text-align: center;
     padding-top: 20px;
