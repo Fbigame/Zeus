@@ -1010,7 +1010,6 @@ class VersionCompareSystem {
         
         // 显示导出成功提示
         const exportedCount = format === 'txt' ? cardIds.length : cards.filter(card => card.cardId && card.cardId.trim() !== '').length;
-        alert(`成功导出 ${exportedCount} 个CardID到${format.toUpperCase()}文件`);
     }
     
     // 重置对比
