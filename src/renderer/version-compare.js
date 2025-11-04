@@ -292,25 +292,24 @@ class VersionCompareSystem {
             
             console.log(`🔍 尝试加载文件:`, { cardPath, tagPath });
             
-            const [cardResponse, tagResponse] = await Promise.all([
-                fetch(cardPath),
-                fetch(tagPath)
+            // 使用IPC调用来读取文件，而不是fetch
+            const [cardResult, tagResult] = await Promise.all([
+                window.fileAPI.readFile(cardPath),
+                window.fileAPI.readFile(tagPath)
             ]);
             
-            console.log(`📥 文件响应状态:`, {
-                cardOk: cardResponse.ok,
-                cardStatus: cardResponse.status,
-                tagOk: tagResponse.ok,
-                tagStatus: tagResponse.status
+            console.log(`📥 文件读取结果:`, {
+                cardSuccess: cardResult.success,
+                tagSuccess: tagResult.success
             });
             
-            if (!cardResponse.ok || !tagResponse.ok) {
-                throw new Error(`无法加载版本 ${version} 的数据文件 - CARD: ${cardResponse.status}, TAG: ${tagResponse.status}`);
+            if (!cardResult.success || !tagResult.success) {
+                throw new Error(`无法加载版本 ${version} 的数据文件 - CARD: ${cardResult.success ? 'OK' : cardResult.error}, TAG: ${tagResult.success ? 'OK' : tagResult.error}`);
             }
             
             console.log(`⏳ 开始解析JSON数据...`);
-            const cardData = await cardResponse.json();
-            const tagData = await tagResponse.json();
+            const cardData = JSON.parse(cardResult.data);
+            const tagData = JSON.parse(tagResult.data);
             
             console.log(`📊 原始数据统计:`, {
                 cardDataKeys: Object.keys(cardData),
