@@ -742,6 +742,11 @@
                         <div class="feature-title">任务查看器</div>
                         <div class="feature-desc">查看游戏任务和任务池数据</div>
                     </button>
+                    <button id="selectAchievementViewerBtn" class="feature-btn">
+                        <div class="feature-icon">🏆</div>
+                        <div class="feature-title">成就查看器</div>
+                        <div class="feature-desc">查看游戏成就和成就分类</div>
+                    </button>
                 </div>
             </div>
         </section>
@@ -962,6 +967,10 @@
 
         document.getElementById('selectQuestViewerBtn').addEventListener('click', () => {
             window.location.href = 'quest-viewer.html';
+        });
+
+        document.getElementById('selectAchievementViewerBtn').addEventListener('click', () => {
+            window.location.href = 'achievement-viewer.html';
         });
     </script>
     <script src="shared-config.js"></script>

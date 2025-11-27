@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <title>炉石传说成就系统</title>
+    <link rel="stylesheet" href="common-buttons.css">
+    <link rel="stylesheet" href="achievement-viewer.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🏆 炉石传说成就系统</h1>
+        
+        <button id="backToIndexBtn" class="back-to-menu-btn">← 返回首页</button>
+
+        <!-- 版本选择区域 -->
+        <section class="version-selection-section">
+            <div class="version-container">
+                <h2>📂 版本选择</h2>
+                <div id="versionDetection" class="version-detection">
+                    <div class="detection-status">
+                        <span id="detectionStatus">正在检测版本文件夹...</span>
+                    </div>
+                    <div class="detection-info" id="dataPathInfo" style="margin-top: 8px; font-size: 11px; color: #6c757d;"></div>
+                </div>
+                
+                <div id="versionSelector" class="version-selector" style="display: none;">
+                    <!-- 模式切换 -->
+                    <div class="mode-toggle-section">
+                        <button id="normalModeBtn" class="mode-btn active">📋 查看模式</button>
+                        <button id="compareModeBtn" class="mode-btn">🔍 对比模式</button>
+                    </div>
+                    
+                    <div class="version-single">
+                        <div class="version-item">
+                            <h3>📦 选择版本</h3>
+                            <select id="versionSelect" class="version-select">
+                                <option value="">请选择版本</option>
+                            </select>
+                            <div class="version-info" id="versionInfo"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="load-controls">
+                        <button id="loadAchievementsBtn" class="load-btn" disabled>📥 加载成就</button>
+                        <button id="refreshVersionsBtn" class="refresh-btn">🔄 刷新版本</button>
+                    </div>
+                    
+                    <!-- 对比版本选择区 -->
+                    <div id="compareVersionSection" class="compare-version-section" style="display: none;">
+                        <div class="version-compare-pair">
+                            <div class="version-compare-item">
+                                <h3>新版本</h3>
+                                <select id="newVersionSelect" class="version-select">
+                                    <option value="">请选择新版本</option>
+                                </select>
+                                <div id="newVersionInfo" class="version-info"></div>
+                            </div>
+                            <div class="version-compare-item">
+                                <h3>旧版本</h3>
+                                <select id="oldVersionSelect" class="version-select">
+                                    <option value="">请选择旧版本</option>
+                                </select>
+                                <div id="oldVersionInfo" class="version-info"></div>
+                            </div>
+                        </div>
+                        <div class="compare-controls">
+                            <button id="startCompareBtn" class="btn btn-compare" disabled>开始对比</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 加载进度区域 -->
+        <section id="loadProgressSection" class="load-progress-section" style="display: none;">
+            <div class="progress-container">
+                <h2>⚙️ 正在加载</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">准备开始加载...</div>
+            </div>
+        </section>
+
+        <!-- 成就列表区域 -->
+        <section id="achievementListSection" class="achievement-list-section" style="display: none;">
+            <div class="achievement-container">
+                <div class="achievement-header">
+                    <div class="achievement-header-top">
+                        <h2>🏆 成就列表</h2>
+                        <div class="achievement-operations-section">
+                            <button id="backToVersionBtn" class="back-btn">← 返回选择</button>
+                            <button id="exportAchievementsBtn" class="export-btn">💾 导出成就</button>
+                        </div>
+                    </div>
+                    <div class="achievement-summary" id="achievementSummary">
+                        <!-- 成就统计信息 -->
+                    </div>
+                </div>
+
+                <!-- 视图切换 -->
+                <div class="view-toggle">
+                    <button id="achievementViewBtn" class="view-btn active">📋 成就视图</button>
+                    <button id="categoryViewBtn" class="view-btn">📁 分类视图</button>
+                </div>
+
+                <!-- 搜索和过滤 -->
+                <div class="achievement-filters">
+                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索成就名称或描述...">
+                    <select id="categoryFilter" class="filter-select">
+                        <option value="">所有分类</option>
+                    </select>
+                    <select id="sectionFilter" class="filter-select">
+                        <option value="">所有章节</option>
+                    </select>
+                </div>
+                
+                <!-- 成就列表视图 -->
+                <div class="achievement-list" id="achievementList">
+                    <!-- 成就列表将在这里显示 -->
+                </div>
+
+                <!-- 分类视图 -->
+                <div class="achievement-category-view" id="achievementCategoryView" style="display: none;">
+                    <!-- 分类视图将在这里显示 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 对比结果区域 -->
+        <section id="compareResultsSection" class="compare-results-section" style="display: none;">
+            <div class="achievement-container">
+                <div class="results-header">
+                    <h3>📊 对比结果</h3>
+                    <button id="newCompareBtn" class="btn btn-secondary">新建对比</button>
+                </div>
+                <div id="compareSummary" class="compare-summary"></div>
+                <div class="results-tabs">
+                    <button class="result-tab active" data-tab="added">新增成就</button>
+                    <button class="result-tab" data-tab="modified">修改成就</button>
+                    <button class="result-tab" data-tab="deleted">删除成就</button>
+                </div>
+                <div id="compareContent" class="compare-content"></div>
+            </div>
+        </section>
+
+        <!-- 成就详情模态框 -->
+        <div id="achievementModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalAchievementName">成就详情</h3>
+                    <button id="closeModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="achievementDetails">
+                        <!-- 成就详细信息将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="data-manager.js"></script>
+    <script src="shared-config.js"></script>
+    <script src="achievement-viewer.js"></script>
+</body>
+</html>
