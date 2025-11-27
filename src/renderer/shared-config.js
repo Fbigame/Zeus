@@ -9,7 +9,7 @@ const SharedDataConfig = {
         // 套牌模板功能使用
         'DECK_TEMPLATE', 'DECK', 'DECK_CARD', 'CLASS',
         // 规则集查看器使用
-        'DECK_RULESET', 'DECK_RULESET_RULE', 'DECK_RULESET_RULE_SUBSET', 'SUBSET'
+        'DECK_RULESET', 'DECK_RULESET_RULE', 'DECK_RULESET_RULE_SUBSET', 'SUBSET', 'SUBSET_RULE'
     ]),
     
     // 注册已使用的文件（保留接口以便将来扩展）

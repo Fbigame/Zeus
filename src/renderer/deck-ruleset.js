@@ -605,17 +605,29 @@ class DeckRulesetSystem {
                 <h4>子集规则</h4>
                 <div class="rule-list">
                     ${this.subsetRules[subsetId] && this.subsetRules[subsetId].length > 0 ? this.subsetRules[subsetId].map((rule, index) => {
-                        const ruleTypeName = this.subsetRuleTypes[rule.m_type] || `未知类型(${rule.m_type})`;
+                        const ruleTypeName = this.subsetRuleTypes[rule.m_ruleType] || `未知类型(${rule.m_ruleType})`;
                         return `
                             <div class="rule-list-item">
                                 <div class="rule-header">
-                                    <span class="rule-id">子集规则 #${index + 1}</span>
+                                    <span class="rule-id">子集规则 #${rule.m_ID}</span>
                                     <span class="rule-type">${ruleTypeName}</span>
                                 </div>
                                 <div class="rule-details">
+                                    <div class="rule-detail-item">
+                                        <strong>规则ID:</strong> ${rule.m_ID}
+                                        &nbsp;&nbsp;
+                                        <strong>子集ID:</strong> ${rule.m_subsetId}
+                                    </div>
+                                    ${rule.m_tagId !== undefined ? `
+                                        <div class="rule-detail-item">
+                                            <strong>标签ID:</strong> ${rule.m_tagId}
+                                        </div>
+                                    ` : ''}
                                     ${rule.m_minValue !== undefined || rule.m_maxValue !== undefined ? `
                                         <div class="rule-detail-item">
-                                            <strong>范围:</strong> ${rule.m_minValue || 0} - ${rule.m_maxValue || 0}
+                                            <strong>最小值:</strong> ${rule.m_minValue !== undefined ? rule.m_minValue : 'N/A'}
+                                            &nbsp;&nbsp;
+                                            <strong>最大值:</strong> ${rule.m_maxValue !== undefined ? rule.m_maxValue : 'N/A'}
                                         </div>
                                     ` : ''}
                                     ${rule.m_intValue !== undefined ? `
@@ -629,7 +641,7 @@ class DeckRulesetSystem {
                                         </div>
                                     ` : ''}
                                     <div class="rule-detail-item">
-                                        <strong>反转规则:</strong> ${rule.m_not ? '是' : '否'}
+                                        <strong>反转规则:</strong> ${rule.m_ruleIsNot ? '是' : '否'}
                                     </div>
                                 </div>
                             </div>
