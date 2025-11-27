@@ -4,7 +4,10 @@
 class CardDetailModal {
     constructor() {
         this.currentCardData = null;
-        this.cardTagsData = null;
+        // 全局缓存数据，避免重复加载
+        this.cachedVersion = null;
+        this.cachedCards = null;
+        this.cachedCardTags = null;
         this.createModal();
     }
     
@@ -76,32 +79,42 @@ class CardDetailModal {
             throw new Error('无法确定数据版本');
         }
         
-        // 加载 CARD 数据
-        const cardPath = `data/${version}/CARD.json`;
-        const cardResult = await window.fileAPI.readFile(cardPath);
-        if (!cardResult.success) {
-            throw new Error('无法读取 CARD.json');
+        // 如果版本变化或首次加载，重新加载数据
+        if (!this.cachedCards || !this.cachedCardTags || this.cachedVersion !== version) {
+            console.log(`加载卡牌数据 (版本: ${version})...`);
+            
+            // 加载 CARD 数据
+            const cardPath = `data/${version}/CARD.json`;
+            const cardResult = await window.fileAPI.readFile(cardPath);
+            if (!cardResult.success) {
+                throw new Error('无法读取 CARD.json');
+            }
+            const cardData = JSON.parse(cardResult.data);
+            this.cachedCards = cardData.Records || [];
+            
+            // 加载 CARD_TAG 数据
+            const tagPath = `data/${version}/CARD_TAG.json`;
+            const tagResult = await window.fileAPI.readFile(tagPath);
+            if (!tagResult.success) {
+                throw new Error('无法读取 CARD_TAG.json');
+            }
+            const tagData = JSON.parse(tagResult.data);
+            this.cachedCardTags = tagData.Records || [];
+            
+            this.cachedVersion = version;
+            console.log(`卡牌数据加载完成 (${this.cachedCards.length} 张卡牌, ${this.cachedCardTags.length} 个标签)`);
         }
-        const cardData = JSON.parse(cardResult.data);
-        const cards = cardData.Records || [];
-        const card = cards.find(c => (c.m_ID || c.ID) === cardId);
+        
+        // 从缓存中查找卡牌
+        const card = this.cachedCards.find(c => (c.m_ID || c.ID) === cardId);
         
         if (!card) {
             throw new Error('未找到卡牌数据');
         }
         
-        // 加载 CARD_TAG 数据
-        const tagPath = `data/${version}/CARD_TAG.json`;
-        const tagResult = await window.fileAPI.readFile(tagPath);
-        if (!tagResult.success) {
-            throw new Error('无法读取 CARD_TAG.json');
-        }
-        const tagData = JSON.parse(tagResult.data);
-        const tags = tagData.Records || [];
-        
         // 构建卡牌标签映射
         const cardTags = {};
-        tags.forEach(tag => {
+        this.cachedCardTags.forEach(tag => {
             const cId = tag.m_cardId || tag.cardId;
             const tagId = tag.m_tagId || tag.tagId;
             const tagValue = tag.m_tagValue || tag.tagValue;
@@ -286,6 +299,14 @@ class CardDetailModal {
     close() {
         document.getElementById('cardDetailModal').style.display = 'none';
         this.currentCardData = null;
+    }
+    
+    // 清除缓存（用于切换版本时）
+    clearCache() {
+        console.log('清除卡牌数据缓存');
+        this.cachedVersion = null;
+        this.cachedCards = null;
+        this.cachedCardTags = null;
     }
 }
 
