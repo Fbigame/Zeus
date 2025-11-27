@@ -454,9 +454,8 @@ ipcMain.handle('scan-files', async (event, dirPath, extension) => {
 
 // IPC 处理器 - 文件操作
 ipcMain.handle('read-file', async (event, filePath) => {
+  let actualPath = filePath;
   try {
-    let actualPath = filePath;
-    
     // 处理 userdata 路径（用户数据）
     if (filePath.startsWith('./userdata/') || filePath.startsWith('userdata/')) {
       const userDataPath = getUserDataPath();

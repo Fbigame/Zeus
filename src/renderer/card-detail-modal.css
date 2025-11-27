@@ -10,6 +10,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow-y: auto;
 }
 
 .card-detail-modal-content {
@@ -21,6 +22,8 @@
     display: flex;
     flex-direction: column;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    margin: auto;
+    position: relative;
 }
 
 .card-detail-modal-header {
