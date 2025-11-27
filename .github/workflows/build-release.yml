@@ -1,5 +1,9 @@
 name: Build and Release
 
+# 设置工作流权限
+permissions:
+    contents: write
+
 on:
     push:
         tags:
