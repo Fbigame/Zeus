@@ -73,12 +73,66 @@ class CardDetailModal {
             else if (window.deckSystem && document.getElementById('versionSelect')) {
                 version = document.getElementById('versionSelect').value;
             }
+            // 尝试从 dataManager 获取
+            else if (window.dataManager) {
+                version = window.dataManager.getVersion();
+            }
         }
         
         if (!version) {
             throw new Error('无法确定数据版本');
         }
         
+        // 使用全局数据管理器加载数据
+        if (window.dataManager) {
+            console.log(`使用 DataManager 加载卡牌数据 (版本: ${version})`);
+            
+            // 设置版本
+            if (window.dataManager.getVersion() !== version) {
+                window.dataManager.setVersion(version);
+            }
+            
+            // 加载数据
+            const [cardData, tagData] = await Promise.all([
+                window.dataManager.loadFile('CARD', version),
+                window.dataManager.loadFile('CARD_TAG', version)
+            ]);
+            
+            const cards = cardData.Records || [];
+            const tags = tagData.Records || [];
+            
+            // 查找卡牌
+            const card = cards.find(c => (c.m_ID || c.ID) === cardId);
+            
+            if (!card) {
+                throw new Error('未找到卡牌数据');
+            }
+            
+            // 构建卡牌标签映射
+            const cardTags = {};
+            tags.forEach(tag => {
+                const cId = tag.m_cardId || tag.cardId;
+                const tagId = tag.m_tagId || tag.tagId;
+                const tagValue = tag.m_tagValue || tag.tagValue;
+                if (cId === cardId) {
+                    cardTags[tagId] = tagValue;
+                }
+            });
+            
+            return {
+                id: card.m_ID || card.ID,
+                cardId: card.m_noteMiniGuid || '',
+                name: this.extractLocalizedText(card.m_name) || `卡牌 ${cardId}`,
+                text: this.extractLocalizedText(card.m_textInHand),
+                flavorText: this.extractLocalizedText(card.m_flavorText),
+                cardSetId: card.m_cardSetId || card.cardSetId || 0,
+                artistName: card.m_artistName || card.artistName || '',
+                tags: cardTags,
+                rawData: card
+            };
+        }
+        
+        // 如果没有 dataManager，使用原有的缓存机制（向后兼容）
         // 如果版本变化或首次加载，重新加载数据
         if (!this.cachedCards || !this.cachedCardTags || this.cachedVersion !== version) {
             console.log(`加载卡牌数据 (版本: ${version})...`);
