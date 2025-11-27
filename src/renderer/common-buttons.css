@@ -1,0 +1,215 @@
+/* 通用按钮样式 */
+
+/* 基础按钮样式 */
+.btn,
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+}
+
+/* 主要操作按钮 - 绿色 */
+.btn-primary,
+.load-btn {
+    background-color: #27ae60;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled),
+.load-btn:hover:not(:disabled) {
+    background-color: #229954;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+}
+
+/* 次要操作按钮 - 蓝色 */
+.btn-secondary,
+.refresh-btn,
+.compare-btn {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled),
+.refresh-btn:hover:not(:disabled),
+.compare-btn:hover:not(:disabled) {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+/* 警告操作按钮 - 橙色 */
+.btn-warning,
+.export-btn {
+    background-color: #e67e22;
+    color: white;
+}
+
+.btn-warning:hover:not(:disabled),
+.export-btn:hover:not(:disabled) {
+    background-color: #d35400;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(230, 126, 34, 0.3);
+}
+
+/* 危险操作按钮 - 红色 */
+.btn-danger {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* 默认/取消按钮 - 灰色 */
+.btn-default,
+.back-btn,
+.back-to-menu-btn {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.btn-default:hover:not(:disabled),
+.back-btn:hover:not(:disabled),
+.back-to-menu-btn:hover:not(:disabled) {
+    background-color: #7f8c8d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(149, 165, 166, 0.3);
+}
+
+/* 返回首页按钮特殊样式 */
+.back-to-menu-btn {
+    display: block;
+    margin: 0 0 30px 0;
+}
+
+/* 成功按钮 - 绿色渐变 */
+.btn-success {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* 禁用状态 */
+.btn:disabled,
+button:disabled,
+.load-btn:disabled,
+.refresh-btn:disabled,
+.compare-btn:disabled,
+.export-btn:disabled,
+.back-btn:disabled {
+    background-color: #bdc3c7;
+    color: #7f8c8d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 激活状态 */
+.btn:active:not(:disabled),
+button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* 按钮组 */
+.button-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.button-group button {
+    flex: 1;
+}
+
+/* 导航按钮样式 */
+.nav-btn {
+    padding: 10px 20px;
+    margin: 0 5px;
+    background-color: #95a5a6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nav-btn:hover,
+.nav-btn.active {
+    background-color: #3498db;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+/* 小按钮样式 */
+.btn-sm,
+.view-subset-btn {
+    padding: 6px 16px;
+    font-size: 13px;
+}
+
+/* 大按钮样式 */
+.btn-lg {
+    padding: 14px 28px;
+    font-size: 16px;
+}
+
+/* 图标按钮 */
+.btn-icon {
+    padding: 10px;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 块级按钮（占满宽度） */
+.btn-block {
+    width: 100%;
+    display: block;
+}
+
+/* 轮廓按钮（边框样式） */
+.btn-outline-primary {
+    background-color: transparent;
+    border: 2px solid #27ae60;
+    color: #27ae60;
+}
+
+.btn-outline-primary:hover:not(:disabled) {
+    background-color: #27ae60;
+    color: white;
+}
+
+.btn-outline-secondary {
+    background-color: transparent;
+    border: 2px solid #3498db;
+    color: #3498db;
+}
+
+.btn-outline-secondary:hover:not(:disabled) {
+    background-color: #3498db;
+    color: white;
+}
+
+/* 按钮间距 */
+.btn + .btn,
+button + button {
+    margin-left: 10px;
+}

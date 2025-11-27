@@ -21,7 +21,7 @@ body {
 h1 {
     text-align: center;
     color: #2c3e50;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     font-size: 2.2em;
 }
 
@@ -80,71 +80,15 @@ h3 {
     justify-content: center;
 }
 
-.load-btn, .refresh-btn, .export-btn, .back-btn, .back-to-menu-btn, .toggle-view-btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.load-btn {
-    background-color: #27ae60;
-    color: white;
-}
-
-.load-btn:hover:not(:disabled) {
-    background-color: #229954;
-}
-
-.load-btn:disabled {
-    background-color: #bdc3c7;
-    cursor: not-allowed;
-}
-
-.refresh-btn {
-    background-color: #3498db;
-    color: white;
-}
-
-.refresh-btn:hover {
-    background-color: #2980b9;
-}
-
-.export-btn {
-    background-color: #e67e22;
-    color: white;
-}
-
-.export-btn:hover {
-    background-color: #d35400;
-}
-
-.back-btn {
-    padding: 8px 16px;
-    background-color: #95a5a6;
-    color: white;
-    font-size: 14px;
-}
-
-.back-btn:hover {
-    background-color: #7f8c8d;
-}
-
-.back-to-menu-btn {
-    background-color: #95a5a6;
-    color: white;
-    margin-bottom: 20px;
-}
-
-.back-to-menu-btn:hover {
-    background-color: #7f8c8d;
-}
-
 .toggle-view-btn {
+    padding: 10px 20px;
     background-color: #9b59b6;
     color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .toggle-view-btn:hover {

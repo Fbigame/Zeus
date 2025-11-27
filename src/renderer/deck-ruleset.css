@@ -23,7 +23,7 @@ body {
 h1 {
     text-align: center;
     color: #2c3e50;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     font-size: 2.2em;
 }
 
@@ -154,78 +154,9 @@ h4 {
     font-weight: bold;
 }
 
-/* 按钮样式 */
-.load-btn, .refresh-btn, .export-btn, .back-btn, .back-to-menu-btn {
-    padding: 12px 24px;
-    margin: 0 10px;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.load-btn {
-    background-color: #27ae60;
-    color: white;
-}
-
-.load-btn:hover:not(:disabled) {
-    background-color: #229954;
-}
-
-.load-btn:disabled {
-    background-color: #bdc3c7;
-    cursor: not-allowed;
-}
-
-.refresh-btn {
-    background-color: #3498db;
-    color: white;
-}
-
-.refresh-btn:hover {
-    background-color: #2980b9;
-}
-
-.export-btn {
-    background-color: #e67e22;
-    color: white;
-}
-
-.export-btn:hover {
-    background-color: #d35400;
-}
-
-.back-btn {
-    padding: 8px 16px;
-    background-color: #95a5a6;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.back-btn:hover {
-    background-color: #7f8c8d;
-}
-
-.back-to-menu-btn {
-    padding: 8px 16px;
-    background-color: #95a5a6;
-    color: white;
-    margin-bottom: 20px;
-}
-
-.back-to-menu-btn:hover {
-    background-color: #7f8c8d;
-}
-
 /* 版本检测区域 */
 .version-detection {
-    max-width: 800px;
+    max-width: 1600px;
     margin: 40px auto;
     padding: 40px;
     background: white;
@@ -249,7 +180,7 @@ h4 {
 
 /* 版本选择区域 */
 .version-selection-section {
-    max-width: 800px;
+    max-width: 1600px;
     margin: 40px auto;
     padding: 40px;
     background: white;
@@ -327,7 +258,7 @@ h4 {
 
 /* 进度条区域 */
 .load-progress-section {
-    max-width: 800px;
+    max-width: 1600px;
     margin: 40px auto;
     padding: 40px;
     background: white;
@@ -368,7 +299,7 @@ h4 {
 
 /* 规则集列表区域 */
 .ruleset-list-section {
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 40px auto;
     padding: 40px;
     background: white;
@@ -583,7 +514,7 @@ h4 {
     padding: 0;
     border-radius: 12px;
     width: 90%;
-    max-width: 1000px;
+    max-width: 1600px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     animation: slideDown 0.3s ease;
 }
@@ -735,14 +666,14 @@ h4 {
 
 .view-subset-btn {
     margin-left: 10px;
-    padding: 4px 12px;
+    padding: 10px 20px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
-    border-radius: 4px;
-    font-size: 12px;
+    border-radius: 6px;
+    font-size: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 }
 
 .view-subset-btn:hover {
