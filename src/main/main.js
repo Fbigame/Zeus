@@ -127,7 +127,9 @@ function checkForUpdates(manual = false) {
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'Fbigame',
-    repo: 'Zeus'
+    repo: 'Zeus',
+    // 使用 latest release，避免 latest.yml 404 错误
+    releaseType: 'release'
   });
 
   // 检查更新错误
