@@ -895,6 +895,13 @@ class QuestViewerSystem {
             compareSection.style.display = 'block';
             loadBtn.style.display = 'none';
             compareQuestBtn.style.display = 'inline-block';
+            
+            // 自动选择最新的两个版本
+            if (this.availableVersions.length >= 2) {
+                document.getElementById('newVersionSelect').value = this.availableVersions[0]; // 最新版本
+                document.getElementById('oldVersionSelect').value = this.availableVersions[1]; // 次新版本
+                this.onCompareVersionSelect();
+            }
         }
     }
     

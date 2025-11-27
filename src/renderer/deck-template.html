@@ -27,7 +27,14 @@
                 </div>
                 
                 <div id="versionSelector" class="version-selector" style="display: none;">
-                    <div class="version-single">
+                    <!-- 模式切换 -->
+                    <div class="mode-toggle">
+                        <button id="singleModeBtn" class="mode-btn active">📋 查看模式</button>
+                        <button id="compareModeBtn" class="mode-btn">🔍 对比模式</button>
+                    </div>
+                    
+                    <!-- 单版本选择 -->
+                    <div id="singleVersionSection" class="version-single">
                         <div class="version-item">
                             <h3>📦 选择版本</h3>
                             <select id="versionSelect" class="version-select">
@@ -37,8 +44,29 @@
                         </div>
                     </div>
                     
+                    <!-- 双版本对比选择 -->
+                    <div id="compareVersionSection" class="version-compare" style="display: none;">
+                        <div class="version-pair">
+                            <div class="version-item">
+                                <h3>📦 旧版本</h3>
+                                <select id="oldVersionSelect" class="version-select">
+                                    <option value="">请选择旧版本</option>
+                                </select>
+                                <div class="version-info" id="oldVersionInfo"></div>
+                            </div>
+                            <div class="version-item">
+                                <h3>📦 新版本</h3>
+                                <select id="newVersionSelect" class="version-select">
+                                    <option value="">请选择新版本</option>
+                                </select>
+                                <div class="version-info" id="newVersionInfo"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="load-controls">
                         <button id="loadDecksBtn" class="load-btn" disabled>📥 加载套牌</button>
+                        <button id="compareDecksBtn" class="load-btn" style="display: none;" disabled>🔍 对比套牌</button>
                         <button id="refreshVersionsBtn" class="refresh-btn">🔄 刷新版本</button>
                     </div>
                 </div>
@@ -87,6 +115,11 @@
                 
                 <div class="deck-list" id="deckList">
                     <!-- 套牌列表将在这里显示 -->
+                </div>
+                
+                <!-- 套牌对比视图 -->
+                <div class="deck-compare-view" id="deckCompareView" style="display: none;">
+                    <!-- 套牌对比结果将在这里显示 -->
                 </div>
             </div>
         </section>

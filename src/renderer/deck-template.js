@@ -7,6 +7,10 @@ class DeckTemplateSystem {
         this.allDecks = [];
         this.filteredDecks = [];
         this.currentVersion = null; // 当前加载的版本
+        this.compareMode = false;
+        this.oldVersionDecks = [];
+        this.newVersionDecks = [];
+        this.compareResults = null;
         this.cardNameMap = new Map(); // 卡牌ID到名称的映射
         this.classNames = {}; // 职业ID到名称的映射
         this.classHeroIds = {}; // 职业ID到默认英雄ID的映射
@@ -35,6 +39,15 @@ class DeckTemplateSystem {
         document.getElementById('loadDecksBtn').addEventListener('click', () => this.loadDecks());
         document.getElementById('refreshVersionsBtn').addEventListener('click', () => this.detectVersions());
         
+        // 模式切换
+        document.getElementById('singleModeBtn').addEventListener('click', () => this.switchMode('single'));
+        document.getElementById('compareModeBtn').addEventListener('click', () => this.switchMode('compare'));
+        
+        // 对比模式版本选择
+        document.getElementById('oldVersionSelect').addEventListener('change', () => this.onCompareVersionSelect());
+        document.getElementById('newVersionSelect').addEventListener('change', () => this.onCompareVersionSelect());
+        document.getElementById('compareDecksBtn').addEventListener('click', () => this.compareDecks());
+        
         // 套牌操作
         document.getElementById('backToVersionBtn').addEventListener('click', () => this.backToVersionSelect());
         document.getElementById('exportDecksBtn').addEventListener('click', () => this.exportDecks());
@@ -42,10 +55,10 @@ class DeckTemplateSystem {
         // 筛选和搜索
         document.getElementById('classFilter').addEventListener('change', () => this.filterDecks());
         document.getElementById('searchInput').addEventListener('input', () => this.filterDecks());
+        document.getElementById('formatFilter').addEventListener('change', () => this.filterDecks());
         
         // 模态框
         document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
-        document.getElementById('copyDeckCodeBtn').addEventListener('click', () => this.copyDeckCode());
         document.getElementById('deckModal').addEventListener('click', (e) => {
             if (e.target.id === 'deckModal') this.closeModal();
         });
@@ -209,31 +222,445 @@ class DeckTemplateSystem {
         console.log('✅ DeckTemplateSystem 初始化完成');
     }
     
-    setupEventListeners() {
-        // 返回首页
-        document.getElementById('backToIndexBtn').addEventListener('click', () => {
-            window.location.href = 'index.html';
+    // 模式切换
+    switchMode(mode) {
+        this.compareMode = (mode === 'compare');
+        
+        // 更新按钮状态
+        document.getElementById('singleModeBtn').classList.toggle('active', !this.compareMode);
+        document.getElementById('compareModeBtn').classList.toggle('active', this.compareMode);
+        
+        if (this.compareMode) {
+            // 对比模式
+            document.getElementById('singleVersionSection').style.display = 'none';
+            document.getElementById('compareVersionSection').style.display = 'flex';
+            document.getElementById('loadDecksBtn').style.display = 'none';
+            document.getElementById('compareDecksBtn').style.display = 'inline-block';
+            document.getElementById('deckListSection').style.display = 'none';
+            document.getElementById('deckCompareView').style.display = 'none';
+            
+            // 填充版本选择器
+            this.populateVersionSelector(document.getElementById('oldVersionSelect'));
+            this.populateVersionSelector(document.getElementById('newVersionSelect'));
+            
+            // 自动选择最新的两个版本
+            if (this.availableVersions.length >= 2) {
+                document.getElementById('newVersionSelect').value = this.availableVersions[0]; // 最新版本
+                document.getElementById('oldVersionSelect').value = this.availableVersions[1]; // 次新版本
+                this.onCompareVersionSelect();
+            }
+        } else {
+            // 单版本模式
+            document.getElementById('singleVersionSection').style.display = 'flex';
+            document.getElementById('compareVersionSection').style.display = 'none';
+            document.getElementById('loadDecksBtn').style.display = 'inline-block';
+            document.getElementById('compareDecksBtn').style.display = 'none';
+            document.getElementById('deckListSection').style.display = this.allDecks.length > 0 ? 'block' : 'none';
+            document.getElementById('deckCompareView').style.display = 'none';
+        }
+    }
+    
+    // 对比模式版本选择
+    onCompareVersionSelect() {
+        const oldVersion = document.getElementById('oldVersionSelect').value;
+        const newVersion = document.getElementById('newVersionSelect').value;
+        const compareBtn = document.getElementById('compareDecksBtn');
+        const oldVersionInfo = document.getElementById('oldVersionInfo');
+        const newVersionInfo = document.getElementById('newVersionInfo');
+        
+        // 更新版本信息显示
+        if (oldVersion) {
+            oldVersionInfo.innerHTML = '<span style="color: #27ae60;">✓ 旧版本已选择</span>';
+        } else {
+            oldVersionInfo.innerHTML = '';
+        }
+        
+        if (newVersion) {
+            newVersionInfo.innerHTML = '<span style="color: #27ae60;">✓ 新版本已选择</span>';
+        } else {
+            newVersionInfo.innerHTML = '';
+        }
+        
+        // 两个版本都选择且不同时才能对比
+        if (oldVersion && newVersion && oldVersion !== newVersion) {
+            compareBtn.disabled = false;
+            oldVersionInfo.innerHTML = '<span style="color: #27ae60;">✓ 已就绪</span>';
+            newVersionInfo.innerHTML = '<span style="color: #27ae60;">✓ 已就绪</span>';
+        } else {
+            compareBtn.disabled = true;
+            if (oldVersion && newVersion && oldVersion === newVersion) {
+                oldVersionInfo.innerHTML = '<span style="color: #e74c3c;">⚠ 请选择不同的版本</span>';
+                newVersionInfo.innerHTML = '<span style="color: #e74c3c;">⚠ 请选择不同的版本</span>';
+            }
+        }
+    }
+    
+    // 对比套牌
+    async compareDecks() {
+        const oldVersion = document.getElementById('oldVersionSelect').value;
+        const newVersion = document.getElementById('newVersionSelect').value;
+        
+        if (!oldVersion || !newVersion || oldVersion === newVersion) {
+            alert('请选择两个不同的版本进行对比');
+            return;
+        }
+        
+        console.log(`🔍 开始对比套牌: ${oldVersion} vs ${newVersion}`);
+        
+        try {
+            // 加载两个版本的套牌
+            const oldDecks = await this.loadVersionDecks(oldVersion);
+            const newDecks = await this.loadVersionDecks(newVersion);
+            
+            if (!oldDecks || !newDecks) {
+                alert('加载套牌数据失败');
+                return;
+            }
+            
+            this.oldVersionDecks = oldDecks;
+            this.newVersionDecks = newDecks;
+            
+            // 执行对比
+            this.compareResults = this.performComparison(oldDecks, newDecks);
+            
+            console.log('📊 对比结果:', this.compareResults);
+            
+            // 显示对比结果
+            this.displayCompareResults();
+            
+            // 隐藏版本选择区域，显示对比结果
+            document.querySelector('.version-selection-section').style.display = 'none';
+            document.getElementById('deckListSection').style.display = 'block';
+            
+        } catch (error) {
+            console.error('❌ 对比套牌失败:', error);
+            alert('对比失败: ' + error.message);
+        }
+    }
+    
+    // 加载指定版本的套牌
+    async loadVersionDecks(version) {
+        console.log(`📂 加载版本 ${version} 的套牌数据`);
+        
+        try {
+            await window.dataManager.setVersion(version);
+            const data = await window.dataManager.loadFile('DECK_TEMPLATE');
+            
+            if (data && data.Records) {
+                console.log(`✅ 版本 ${version} 套牌数据加载成功:`, data.Records.length, '个套牌');
+                return data.Records;
+            } else {
+                console.error(`❌ 版本 ${version} 套牌数据格式错误:`, data);
+                return null;
+            }
+        } catch (error) {
+            console.error(`❌ 加载版本 ${version} 失败:`, error);
+            return null;
+        }
+    }
+    
+    // 执行对比
+    performComparison(oldDecks, newDecks) {
+        const added = [];
+        const removed = [];
+        const modified = [];
+        
+        // 创建ID映射
+        const oldMap = new Map(oldDecks.map(d => [d.m_id, d]));
+        const newMap = new Map(newDecks.map(d => [d.m_id, d]));
+        
+        // 查找新增和修改的套牌
+        for (const newDeck of newDecks) {
+            const oldDeck = oldMap.get(newDeck.m_id);
+            if (!oldDeck) {
+                added.push(newDeck);
+            } else {
+                const changes = this.getDeckChanges(oldDeck, newDeck);
+                if (changes.length > 0) {
+                    modified.push({
+                        deck: newDeck,
+                        changes: changes
+                    });
+                }
+            }
+        }
+        
+        // 查找移除的套牌
+        for (const oldDeck of oldDecks) {
+            if (!newMap.has(oldDeck.m_id)) {
+                removed.push(oldDeck);
+            }
+        }
+        
+        return { added, removed, modified };
+    }
+    
+    // 获取套牌变化
+    getDeckChanges(oldDeck, newDeck) {
+        const changes = [];
+        
+        // 比较基本字段
+        const fieldsToCompare = [
+            { key: 'm_name', label: '套牌名称' },
+            { key: 'm_deckType', label: '套牌类型', format: v => v === 1 ? '标准' : v === 2 ? '狂野' : v === 3 ? '经典' : v === 4 ? '扭曲' : `类型${v}` },
+            { key: 'm_heroDbfId', label: '英雄ID' },
+            { key: 'm_heroPowerDbfId', label: '英雄技能ID' },
+            { key: 'm_classId', label: '职业', format: v => this.classNames[v] || `职业${v}` },
+            { key: 'm_sortOrder', label: '排序' }
+        ];
+        
+        for (const field of fieldsToCompare) {
+            if (oldDeck[field.key] !== newDeck[field.key]) {
+                const oldValue = field.format ? field.format(oldDeck[field.key]) : oldDeck[field.key];
+                const newValue = field.format ? field.format(newDeck[field.key]) : newDeck[field.key];
+                changes.push({
+                    field: field.label,
+                    old: oldValue,
+                    new: newValue
+                });
+            }
+        }
+        
+        // 比较卡牌列表
+        const oldCards = oldDeck.m_cardDbfIds || [];
+        const newCards = newDeck.m_cardDbfIds || [];
+        if (JSON.stringify(oldCards) !== JSON.stringify(newCards)) {
+            changes.push({
+                field: '卡牌列表',
+                old: `${oldCards.length}张卡牌`,
+                new: `${newCards.length}张卡牌`,
+                detail: this.getCardListDiff(oldCards, newCards)
+            });
+        }
+        
+        // 比较备牌
+        const oldSideboard = oldDeck.m_sideboardCards || [];
+        const newSideboard = newDeck.m_sideboardCards || [];
+        if (JSON.stringify(oldSideboard) !== JSON.stringify(newSideboard)) {
+            changes.push({
+                field: '备牌',
+                old: `${oldSideboard.length}张备牌`,
+                new: `${newSideboard.length}张备牌`
+            });
+        }
+        
+        return changes;
+    }
+    
+    // 获取卡牌列表差异
+    getCardListDiff(oldCards, newCards) {
+        const oldCounts = {};
+        const newCounts = {};
+        
+        oldCards.forEach(id => oldCounts[id] = (oldCounts[id] || 0) + 1);
+        newCards.forEach(id => newCounts[id] = (newCounts[id] || 0) + 1);
+        
+        const allCardIds = new Set([...oldCards, ...newCards]);
+        const diff = [];
+        
+        for (const cardId of allCardIds) {
+            const oldCount = oldCounts[cardId] || 0;
+            const newCount = newCounts[cardId] || 0;
+            if (oldCount !== newCount) {
+                const cardName = this.cardNameMap[cardId] || `卡牌${cardId}`;
+                diff.push(`${cardName}: ${oldCount} → ${newCount}`);
+            }
+        }
+        
+        return diff.join(', ');
+    }
+    
+    // 显示对比结果
+    displayCompareResults() {
+        const container = document.getElementById('deckCompareView');
+        const { added, removed, modified } = this.compareResults;
+        
+        const oldVersion = document.getElementById('oldVersionSelect').value;
+        const newVersion = document.getElementById('newVersionSelect').value;
+        
+        let html = `
+            <div class="compare-summary">
+                <h3>对比结果: ${oldVersion} → ${newVersion}</h3>
+                <div class="compare-stats">
+                    <span class="stat-item added">新增: ${added.length}</span>
+                    <span class="stat-item removed">移除: ${removed.length}</span>
+                    <span class="stat-item modified">修改: ${modified.length}</span>
+                </div>
+            </div>
+            
+            <div class="compare-tabs">
+                <button class="compare-tab active" data-tab="added">新增 (${added.length})</button>
+                <button class="compare-tab" data-tab="removed">移除 (${removed.length})</button>
+                <button class="compare-tab" data-tab="modified">修改 (${modified.length})</button>
+            </div>
+            
+            <div class="compare-content">
+                <div class="compare-tab-content active" id="addedContent">
+                    ${this.renderDeckList(added, 'added')}
+                </div>
+                <div class="compare-tab-content" id="removedContent">
+                    ${this.renderDeckList(removed, 'removed')}
+                </div>
+                <div class="compare-tab-content" id="modifiedContent">
+                    ${this.renderModifiedDecks(modified)}
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+        container.style.display = 'block';
+        
+        // 添加标签切换事件
+        container.querySelectorAll('.compare-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const targetTab = e.target.dataset.tab;
+                
+                container.querySelectorAll('.compare-tab').forEach(t => t.classList.remove('active'));
+                container.querySelectorAll('.compare-tab-content').forEach(c => c.classList.remove('active'));
+                
+                e.target.classList.add('active');
+                container.querySelector(`#${targetTab}Content`).classList.add('active');
+            });
         });
         
-        // 版本选择
-        document.getElementById('versionSelect').addEventListener('change', () => this.onVersionSelect());
-        document.getElementById('loadDecksBtn').addEventListener('click', () => this.loadDecks());
-        document.getElementById('refreshVersionsBtn').addEventListener('click', () => this.detectVersions());
-        
-        // 套牌操作
-        document.getElementById('backToVersionBtn').addEventListener('click', () => this.backToVersionSelect());
-        document.getElementById('exportDecksBtn').addEventListener('click', () => this.exportDecks());
-        
-        // 搜索和过滤
-        document.getElementById('searchInput').addEventListener('input', () => this.filterDecks());
-        document.getElementById('classFilter').addEventListener('change', () => this.filterDecks());
-        document.getElementById('formatFilter').addEventListener('change', () => this.filterDecks());
-        
-        // 模态框
-        document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
-        document.getElementById('deckModal').addEventListener('click', (e) => {
-            if (e.target.id === 'deckModal') this.closeModal();
+        // 为对比卡片添加点击事件
+        container.querySelectorAll('.compare-deck-card').forEach(card => {
+            const deckIdStr = card.dataset.deckId;
+            const deckVersion = card.dataset.deckVersion;
+            
+            // 只有有效的ID才添加点击事件
+            if (deckIdStr && deckVersion) {
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', (e) => {
+                    const deckId = parseInt(deckIdStr);
+                    console.log('🖱️ 点击套牌卡片:', { deckId, deckVersion });
+                    
+                    // 根据版本查找对应的套牌数据
+                    let deck = null;
+                    if (deckVersion === 'old') {
+                        deck = this.oldVersionDecks.find(d => d.m_id === deckId);
+                        console.log('📂 从旧版本查找:', deck ? '找到' : '未找到', this.oldVersionDecks.length, '个套牌');
+                    } else if (deckVersion === 'new') {
+                        deck = this.newVersionDecks.find(d => d.m_id === deckId);
+                        console.log('📂 从新版本查找:', deck ? '找到' : '未找到', this.newVersionDecks.length, '个套牌');
+                    }
+                    if (deck) {
+                        console.log('✅ 显示套牌详情:', deck);
+                        this.showDeckDetails(deck);
+                    } else {
+                        console.error('❌ 未找到套牌:', deckId);
+                    }
+                });
+            }
         });
+    }
+    
+    // 渲染套牌列表
+    renderDeckList(decks, type) {
+        if (decks.length === 0) {
+            return '<div class="empty-state">无数据</div>';
+        }
+        
+        // 确定版本来源：added/modified使用新版本，removed使用旧版本
+        const deckVersion = type === 'removed' ? 'old' : 'new';
+        
+        return decks.map(deck => {
+            const deckId = deck.m_id; // 保持原始ID用于查找
+            const displayId = deckId !== undefined && deckId !== null ? deckId : '未知';
+            const deckName = deck.m_name || '未命名套牌';
+            const className = deck.m_classId !== undefined && deck.m_classId !== null 
+                ? (this.classNames[deck.m_classId] || `职业${deck.m_classId}`) 
+                : '未知职业';
+            const deckType = deck.m_deckType === 1 ? '标准' : 
+                           deck.m_deckType === 2 ? '狂野' : 
+                           deck.m_deckType === 3 ? '经典' : 
+                           deck.m_deckType === 4 ? '扭曲' : 
+                           deck.m_deckType !== undefined && deck.m_deckType !== null ? `类型${deck.m_deckType}` : '未知类型';
+            const cardCount = (deck.m_cardDbfIds || []).length;
+            const sideboardCount = (deck.m_sideboardCards || []).length;
+            
+            // 只有有效ID才添加data属性
+            const dataAttrs = deckId !== undefined && deckId !== null ? `data-deck-id="${deckId}" data-deck-version="${deckVersion}"` : '';
+            
+            return `
+                <div class="compare-deck-card ${type}" ${dataAttrs}>
+                    <div class="deck-header">
+                        <span class="deck-id">#${displayId}</span>
+                        <span class="deck-name">${deckName}</span>
+                    </div>
+                    <div class="deck-info">
+                        <span>职业: ${className}</span>
+                        <span>类型: ${deckType}</span>
+                        <span>卡牌: ${cardCount}张</span>
+                        ${sideboardCount > 0 ? `<span>备牌: ${sideboardCount}张</span>` : ''}
+                    </div>
+                    <div class="deck-actions" style="margin-top: 10px; text-align: right;">
+                        <span style="color: #3498db; font-size: 12px;">👁️ 点击查看详情</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // 渲染修改的套牌
+    renderModifiedDecks(modified) {
+        if (modified.length === 0) {
+            return '<div class="empty-state">无数据</div>';
+        }
+        
+        return modified.map(item => {
+            const deck = item.deck;
+            const deckId = deck.m_id; // 保持原始ID用于查找
+            const displayId = deckId !== undefined && deckId !== null ? deckId : '未知';
+            const deckName = deck.m_name || '未命名套牌';
+            const className = deck.m_classId !== undefined && deck.m_classId !== null 
+                ? (this.classNames[deck.m_classId] || `职业${deck.m_classId}`) 
+                : '未知职业';
+            const deckType = deck.m_deckType === 1 ? '标准' : 
+                           deck.m_deckType === 2 ? '狂野' : 
+                           deck.m_deckType === 3 ? '经典' : 
+                           deck.m_deckType === 4 ? '扭曲' : 
+                           deck.m_deckType !== undefined && deck.m_deckType !== null ? `类型${deck.m_deckType}` : '未知类型';
+            
+            // 只有有效ID才添加data属性
+            const dataAttrs = deckId !== undefined && deckId !== null ? `data-deck-id="${deckId}" data-deck-version="new"` : '';
+            
+            const changesHtml = item.changes.map(change => {
+                let detailHtml = '';
+                if (change.detail) {
+                    detailHtml = `<div class="change-detail">${change.detail}</div>`;
+                }
+                return `
+                    <div class="compare-change-item">
+                        <strong>${change.field}:</strong> 
+                        <span class="old-value">${change.old !== undefined && change.old !== null ? change.old : '无'}</span> 
+                        → 
+                        <span class="new-value">${change.new !== undefined && change.new !== null ? change.new : '无'}</span>
+                        ${detailHtml}
+                    </div>
+                `;
+            }).join('');
+            
+            return `
+                <div class="compare-deck-card modified" ${dataAttrs}>
+                    <div class="deck-header">
+                        <span class="deck-id">#${displayId}</span>
+                        <span class="deck-name">${deckName}</span>
+                    </div>
+                    <div class="deck-info">
+                        <span>职业: ${className}</span>
+                        <span>类型: ${deckType}</span>
+                    </div>
+                    <div class="compare-changes">
+                        <div class="changes-header">变更详情:</div>
+                        ${changesHtml}
+                    </div>
+                    <div class="deck-actions" style="margin-top: 10px; text-align: right;">
+                        <span style="color: #3498db; font-size: 12px;">👁️ 点击查看详情</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
     
     // 检测版本文件夹
@@ -308,15 +735,20 @@ class DeckTemplateSystem {
     }
     
     // 填充版本选择器
-    populateVersionSelector() {
-        const select = document.getElementById('versionSelect');
-        select.innerHTML = '<option value="">请选择版本</option>';
+    populateVersionSelector(selectElement = null) {
+        const selects = selectElement ? [selectElement] : [document.getElementById('versionSelect')];
         
-        this.availableVersions.forEach(version => {
-            const option = document.createElement('option');
-            option.value = version;
-            option.textContent = `版本 ${version}`;
-            select.appendChild(option);
+        selects.forEach(select => {
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">请选择版本</option>';
+            
+            this.availableVersions.forEach(version => {
+                const option = document.createElement('option');
+                option.value = version;
+                option.textContent = `版本 ${version}`;
+                select.appendChild(option);
+            });
         });
     }
     
@@ -838,9 +1270,43 @@ class DeckTemplateSystem {
     }
     
     // 显示套牌详情
-    showDeckDetails(deckId) {
-        const deck = this.allDecks.find(d => d.id === deckId);
-        if (!deck) return;
+    showDeckDetails(deckIdOrDeck) {
+        let deck;
+        
+        // 判断传入的是ID还是对象
+        if (typeof deckIdOrDeck === 'object') {
+            // 传入的是对比视图的原始套牌对象，需要转换格式
+            const rawDeck = deckIdOrDeck;
+            deck = {
+                id: rawDeck.m_id,
+                name: rawDeck.m_name ? this.extractLocalizedText(rawDeck.m_name) : `套牌 ${rawDeck.m_id}`,
+                classId: rawDeck.m_classId || 0,
+                className: this.classNames[rawDeck.m_classId] || '未知',
+                deckType: rawDeck.m_deckType || 0,
+                sortOrder: rawDeck.m_sortOrder || 0,
+                cards: (rawDeck.m_cardDbfIds || []).map(cardId => ({
+                    cardId: cardId,
+                    count: 1, // 原始数据中每个ID代表一张卡
+                    deckCardIds: []
+                }))
+            };
+            
+            // 合并相同卡牌并统计数量
+            const cardMap = new Map();
+            deck.cards.forEach(card => {
+                if (cardMap.has(card.cardId)) {
+                    cardMap.get(card.cardId).count++;
+                } else {
+                    cardMap.set(card.cardId, card);
+                }
+            });
+            deck.cards = Array.from(cardMap.values());
+        } else {
+            // 传入的是ID，从allDecks中查找
+            const deckId = deckIdOrDeck;
+            deck = this.allDecks.find(d => d.id === deckId);
+            if (!deck) return;
+        }
         
         document.getElementById('modalDeckName').textContent = deck.name;
         
@@ -993,10 +1459,25 @@ class DeckTemplateSystem {
     
     // 返回版本选择
     backToVersionSelect() {
-        document.getElementById('deckListSection').style.display = 'none';
-        document.querySelector('.version-selection-section').style.display = 'block';
-        this.allDecks = [];
-        this.filteredDecks = [];
+        if (this.compareMode) {
+            // 对比模式：清空对比结果，返回版本选择
+            document.getElementById('deckListSection').style.display = 'none';
+            document.querySelector('.version-selection-section').style.display = 'block';
+            document.getElementById('deckCompareView').style.display = 'none';
+            document.getElementById('compareVersionSection').style.display = 'flex';
+            this.oldVersionDecks = [];
+            this.newVersionDecks = [];
+            this.compareResults = null;
+            document.getElementById('oldVersionSelect').value = '';
+            document.getElementById('newVersionSelect').value = '';
+            document.getElementById('compareDecksBtn').disabled = true;
+        } else {
+            // 单版本模式：返回版本选择
+            document.getElementById('deckListSection').style.display = 'none';
+            document.querySelector('.version-selection-section').style.display = 'block';
+            this.allDecks = [];
+            this.filteredDecks = [];
+        }
     }
     
     // 导出套牌
