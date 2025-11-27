@@ -31,6 +31,7 @@ class DataViewerSystem {
         document.getElementById('fileSelect').addEventListener('change', () => this.onFileSelect());
         document.getElementById('loadDataBtn').addEventListener('click', () => this.loadData());
         document.getElementById('refreshBtn').addEventListener('click', () => this.detectVersions());
+        document.getElementById('hideUsedFilesCheckbox').addEventListener('change', () => this.onVersionSelect());
         
         // 数据操作
         document.getElementById('backToSelectBtn').addEventListener('click', () => this.backToSelect());
@@ -120,6 +121,7 @@ class DataViewerSystem {
         
         // 从全局配置读取已在其他功能中使用的文件列表
         const excludedFiles = window.SharedDataConfig ? window.SharedDataConfig.getUsedFiles() : [];
+        const hideUsedFiles = document.getElementById('hideUsedFilesCheckbox').checked;
         
         // 动态扫描版本目录获取所有JSON文件
         let allFiles = [];
@@ -144,8 +146,10 @@ class DataViewerSystem {
             console.error('扫描文件时出错:', error);
         }
         
-        // 过滤掉已使用的文件
-        this.availableFiles = allFiles.filter(file => !excludedFiles.includes(file));
+        // 根据勾选框状态决定是否过滤掉已使用的文件
+        this.availableFiles = hideUsedFiles 
+            ? allFiles.filter(file => !excludedFiles.includes(file))
+            : allFiles;
         
         fileSelect.innerHTML = '<option value="">请选择数据文件</option>';
         this.availableFiles.forEach(file => {
@@ -158,7 +162,9 @@ class DataViewerSystem {
         fileSelect.disabled = false;
         
         // 显示提示信息
-        const infoText = `可用文件数: ${this.availableFiles.length} (已隐藏 ${excludedFiles.length} 个已使用的文件)`;
+        const infoText = hideUsedFiles 
+            ? `可用文件数: ${this.availableFiles.length} (已隐藏 ${excludedFiles.length} 个已使用的文件)`
+            : `可用文件数: ${this.availableFiles.length} (共 ${excludedFiles.length} 个已使用的文件)`;
         if (!document.getElementById('fileCountInfo')) {
             const infoDiv = document.createElement('div');
             infoDiv.id = 'fileCountInfo';
@@ -191,13 +197,20 @@ class DataViewerSystem {
             }
             
             const jsonData = JSON.parse(result.data);
+            const records = jsonData.Records || [];
+            
+            // 按 m_ID 排序（如果存在 m_ID 字段）
+            if (records.length > 0 && records[0].m_ID !== undefined) {
+                records.sort((a, b) => (a.m_ID || 0) - (b.m_ID || 0));
+            }
+            
             this.currentData = {
                 fileName: file,
                 version: version,
-                records: jsonData.Records || [],
+                records: records,
                 metadata: {
                     m_Name: jsonData.m_Name,
-                    totalRecords: (jsonData.Records || []).length
+                    totalRecords: records.length
                 }
             };
             

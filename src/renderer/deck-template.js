@@ -9,6 +9,8 @@ class DeckTemplateSystem {
         this.cardNameMap = new Map(); // 卡牌ID到名称的映射
         this.classNames = {}; // 职业ID到名称的映射
         this.classHeroIds = {}; // 职业ID到默认英雄ID的映射
+        this.sideboardMap = new Map(); // deckCardId到sideboardCardId的映射
+        this.cardCostMap = new Map(); // 卡牌ID到费用的映射
         
         this.init();
     }
@@ -111,6 +113,80 @@ class DeckTemplateSystem {
                 bytes.push(...this.encodeVarint(card.id));
                 bytes.push(...this.encodeVarint(card.count));
             });
+            
+            // 收集备牌信息：需要知道每个备牌对应的主卡
+            const sideboardData = [];
+            deck.cards.forEach(card => {
+                if (card.deckCardIds && card.deckCardIds.length > 0) {
+                    card.deckCardIds.forEach(deckCardId => {
+                        const sideboardCardIds = this.sideboardMap.get(deckCardId);
+                        if (sideboardCardIds && Array.isArray(sideboardCardIds)) {
+                            sideboardCardIds.forEach(sideboardCardId => {
+                                sideboardData.push({
+                                    sideboardCardId: sideboardCardId,
+                                    linkCardId: card.cardId  // 关联到主卡
+                                });
+                            });
+                        }
+                    });
+                }
+            });
+            
+            if (sideboardData.length > 0) {
+                // 有备牌
+                bytes.push(...this.encodeVarint(1));
+                
+                // 按备牌ID分组计数
+                const sideboardCounts = new Map();
+                sideboardData.forEach(item => {
+                    const key = `${item.sideboardCardId}_${item.linkCardId}`;
+                    if (!sideboardCounts.has(key)) {
+                        sideboardCounts.set(key, {
+                            sideboardCardId: item.sideboardCardId,
+                            linkCardId: item.linkCardId,
+                            count: 0
+                        });
+                    }
+                    sideboardCounts.get(key).count++;
+                });
+                
+                // 按数量分组备牌
+                const sideboardGroups = { 1: [], 2: [], n: [] };
+                sideboardCounts.forEach((item) => {
+                    if (item.count === 1) {
+                        sideboardGroups[1].push(item);
+                    } else if (item.count === 2) {
+                        sideboardGroups[2].push(item);
+                    } else {
+                        sideboardGroups.n.push(item);
+                    }
+                });
+                
+                // 单张备牌
+                bytes.push(...this.encodeVarint(sideboardGroups[1].length));
+                sideboardGroups[1].sort((a, b) => a.sideboardCardId - b.sideboardCardId).forEach(item => {
+                    bytes.push(...this.encodeVarint(item.sideboardCardId));  // 备牌ID
+                    bytes.push(...this.encodeVarint(item.linkCardId));       // 关联主卡ID
+                });
+                
+                // 双张备牌
+                bytes.push(...this.encodeVarint(sideboardGroups[2].length));
+                sideboardGroups[2].sort((a, b) => a.sideboardCardId - b.sideboardCardId).forEach(item => {
+                    bytes.push(...this.encodeVarint(item.sideboardCardId));
+                    bytes.push(...this.encodeVarint(item.linkCardId));
+                });
+                
+                // N张备牌
+                bytes.push(...this.encodeVarint(sideboardGroups.n.length));
+                sideboardGroups.n.sort((a, b) => a.sideboardCardId - b.sideboardCardId).forEach(item => {
+                    bytes.push(...this.encodeVarint(item.count));           // 数量
+                    bytes.push(...this.encodeVarint(item.sideboardCardId));
+                    bytes.push(...this.encodeVarint(item.linkCardId));
+                });
+            } else {
+                // 没有备牌
+                bytes.push(...this.encodeVarint(0));
+            }
             
             // 转换为 Uint8Array 并进行 Base64 编码
             const uint8Array = new Uint8Array(bytes);
@@ -348,6 +424,10 @@ class DeckTemplateSystem {
             await this.loadCardNames(version);
             console.log('✅ 卡牌名称加载完成');
             
+            this.updateProgress(90, '正在加载备牌信息...');
+            await this.loadSideboardCards(version);
+            console.log('✅ 备牌信息加载完成');
+            
             this.updateProgress(95, '正在关联数据...');
             this.allDecks = this.associateData(templates, decks, cards);
             console.log('✅ 数据关联完成:', this.allDecks.length);
@@ -454,22 +534,68 @@ class DeckTemplateSystem {
         const data = JSON.parse(result.data);
         const cards = data.Records || [];
         
-        // 创建卡牌ID到名称的映射
+        // 创建卡牌ID到名称和费用的映射
         this.cardNameMap.clear();
+        this.cardCostMap.clear();
         cards.forEach(card => {
             const cardId = card.m_ID || card.ID;
             const cardName = card.m_name ? this.extractLocalizedText(card.m_name) : '';
+            
+            // 从 CARD_TAG 中查找费用，或从卡牌数据中直接获取
+            let cost = 0;
+            if (card.m_tags && Array.isArray(card.m_tags)) {
+                const costTag = card.m_tags.find(tag => tag.m_tagId === 48 || tag.tagId === 48);
+                if (costTag) {
+                    cost = costTag.m_tagValue || costTag.tagValue || 0;
+                }
+            }
+            
             if (cardId && cardName) {
                 this.cardNameMap.set(cardId, cardName);
+                this.cardCostMap.set(cardId, cost);
             }
         });
         
-        console.log(`✅ 已加载 ${this.cardNameMap.size} 张卡牌的名称`);
+        console.log(`✅ 已加载 ${this.cardNameMap.size} 张卡牌的名称和费用`);
     }
     
     // 获取卡牌名称
     getCardName(cardId) {
         return this.cardNameMap.get(cardId) || '';
+    }
+    
+    // 获取卡牌费用
+    getCardCost(cardId) {
+        return this.cardCostMap.get(cardId) || 0;
+    }
+    
+    // 加载备牌信息
+    async loadSideboardCards(version) {
+        const filePath = `data/${version}/SIDEBOARD_CARD.json`;
+        const result = await window.fileAPI.readFile(filePath);
+        
+        if (!result.success) {
+            console.warn('无法读取 SIDEBOARD_CARD.json，备牌信息将不可用');
+            return;
+        }
+        
+        const data = JSON.parse(result.data);
+        const sideboardCards = data.Records || [];
+        
+        // 创建 deckCardId 到 sideboardCardId数组 的映射（一个卡可能有多个备牌）
+        this.sideboardMap.clear();
+        sideboardCards.forEach(sideboard => {
+            const deckCardId = sideboard.m_deckCardId;
+            const sideboardCardId = sideboard.m_sideboardCardId;
+            if (deckCardId && sideboardCardId) {
+                if (!this.sideboardMap.has(deckCardId)) {
+                    this.sideboardMap.set(deckCardId, []);
+                }
+                this.sideboardMap.get(deckCardId).push(sideboardCardId);
+            }
+        });
+        
+        console.log(`✅ 已加载 ${this.sideboardMap.size} 条备牌映射`);
     }
     
     // 关联数据
@@ -497,17 +623,24 @@ class DeckTemplateSystem {
                 const deck = deckMap.get(deckId);
                 const cardId = card.m_cardId;
                 const count = card.m_count || 1;
+                const deckCardId = card.m_ID; // 保存 DECK_CARD 的 m_ID 用于查找备牌
                 
                 // 查找是否已存在该卡牌
                 const existingCard = deck.cards.find(c => c.cardId === cardId);
                 if (existingCard) {
                     // 如果存在，累加数量
                     existingCard.count += count;
+                    // 如果之前没有 deckCardId，添加一个数组
+                    if (!existingCard.deckCardIds) {
+                        existingCard.deckCardIds = [];
+                    }
+                    existingCard.deckCardIds.push(deckCardId);
                 } else {
                     // 如果不存在，添加新卡牌
                     deck.cards.push({
                         cardId: cardId,
-                        count: count
+                        count: count,
+                        deckCardIds: [deckCardId] // 保存所有对应的 deckCardId
                     });
                 }
             }
@@ -619,7 +752,10 @@ class DeckTemplateSystem {
         const classFilter = document.getElementById('classFilter').value;
         
         this.filteredDecks = this.allDecks.filter(deck => {
-            const matchSearch = !searchText || deck.name.toLowerCase().includes(searchText);
+            // 搜索支持：套牌名称、套牌ID
+            const matchSearch = !searchText || 
+                deck.name.toLowerCase().includes(searchText) ||
+                deck.id.toString().includes(searchText);
             const matchClass = !classFilter || deck.classId == classFilter;
             return matchSearch && matchClass;
         });
@@ -704,15 +840,60 @@ class DeckTemplateSystem {
             <div class="deck-details-cards">
                 <h4>卡牌列表 (共${deck.cards.reduce((sum, card) => sum + card.count, 0)}张，${deck.cards.length}种)</h4>
                 <div class="card-list">
-                    ${deck.cards.map(card => {
+                    ${deck.cards
+                        // 按费用排序，费用相同则按卡牌ID排序
+                        .sort((a, b) => {
+                            const costA = this.getCardCost(a.cardId);
+                            const costB = this.getCardCost(b.cardId);
+                            if (costA !== costB) {
+                                return costA - costB;
+                            }
+                            return a.cardId - b.cardId;
+                        })
+                        .map(card => {
                         const cardName = this.getCardName(card.cardId);
-                        return `
+                        const cardCost = this.getCardCost(card.cardId);
+                        
+                        // 查找该卡的所有备牌
+                        const sideboardCards = [];
+                        if (card.deckCardIds && card.deckCardIds.length > 0) {
+                            card.deckCardIds.forEach(deckCardId => {
+                                const sideboardCardIds = this.sideboardMap.get(deckCardId);
+                                if (sideboardCardIds && Array.isArray(sideboardCardIds)) {
+                                    sideboardCardIds.forEach(sideboardCardId => {
+                                        if (!sideboardCards.includes(sideboardCardId)) {
+                                            sideboardCards.push(sideboardCardId);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        
+                        let html = `
                         <div class="card-list-item">
+                            <span class="card-cost">[费用${cardCost}]</span>
                             <span class="card-count">${card.count}x</span>
-                            <span class="card-id">CardID: ${card.cardId}</span>
+                            <span class="card-id">ID: ${card.cardId}</span>
                             ${cardName ? `<span class="card-name-text">${cardName}</span>` : ''}
                         </div>
                         `;
+                        
+                        // 如果有备牌，显示备牌信息
+                        if (sideboardCards.length > 0) {
+                            sideboardCards.forEach(sideboardCardId => {
+                                const sideboardCardName = this.getCardName(sideboardCardId);
+                                const sideboardCardCost = this.getCardCost(sideboardCardId);
+                                html += `
+                                <div class="card-list-item sideboard-item">
+                                    <span class="card-cost">[费用${sideboardCardCost}]</span>
+                                    <span class="card-id">ID: ${sideboardCardId}</span>
+                                    ${sideboardCardName ? `<span class="card-name-text">${sideboardCardName}</span>` : ''}
+                                </div>
+                                `;
+                            });
+                        }
+                        
+                        return html;
                     }).join('')}
                 </div>
             </div>

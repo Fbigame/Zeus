@@ -484,6 +484,13 @@ h4 {
     margin-bottom: 0;
 }
 
+.card-cost {
+    font-weight: bold;
+    color: #3498db;
+    min-width: 65px;
+    font-size: 0.9em;
+}
+
 .card-count {
     font-weight: bold;
     color: #2c3e50;
@@ -500,6 +507,20 @@ h4 {
     color: #2c3e50;
     font-weight: 500;
     flex: 1;
+}
+
+/* 备牌样式 */
+.sideboard-item {
+    margin-left: 45px;
+    border-left-color: #9b59b6;
+    background: #f0e6f6;
+}
+
+.sideboard-label {
+    color: #9b59b6;
+    font-weight: bold;
+    font-size: 0.9em;
+    min-width: 60px;
 }
 
 /* 响应式设计 */

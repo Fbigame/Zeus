@@ -7,9 +7,11 @@ const SharedDataConfig = {
         // 版本对比功能使用
         'CARD', 'CARD_TAG',
         // 套牌模板功能使用
-        'DECK_TEMPLATE', 'DECK', 'DECK_CARD', 'CLASS',
+        'DECK_TEMPLATE', 'DECK', 'DECK_CARD', 'CLASS', 'SIDEBOARD_CARD',
         // 规则集查看器使用
-        'DECK_RULESET', 'DECK_RULESET_RULE', 'DECK_RULESET_RULE_SUBSET', 'SUBSET', 'SUBSET_RULE'
+        'DECK_RULESET', 'DECK_RULESET_RULE', 'DECK_RULESET_RULE_SUBSET', 'SUBSET', 'SUBSET_RULE',
+        // 卡牌查看器使用
+        'CARD_SET_TIMING', 'EventMap'
     ]),
     
     // 注册已使用的文件（保留接口以便将来扩展）
