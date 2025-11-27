@@ -6,7 +6,11 @@ module.exports = {
   packagerConfig: {
     asar: true,
     // 应用图标配置 - 使用相对路径（打包时会正确处理）
-    icon: './assets/icon'
+    icon: './assets/icon',
+    // 打包时包含 app-update.yml 文件
+    extraResource: [
+      './app-update.yml'
+    ]
   },
   rebuildConfig: {},
   makers: [
