@@ -53,6 +53,12 @@
       "README.md"
     ],
     "asar": true,
+    "extraResources": [
+      {
+        "from": "app-update.yml",
+        "to": "app-update.yml"
+      }
+    ],
     "publish": [
       {
         "provider": "github",
@@ -75,7 +81,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Hearthstone Client Tool",
-      "artifactName": "${productName}-${version}-Setup.${ext}"
+      "artifactName": "Hearthstone-Client-Tool-${version}-Setup.${ext}"
     }
   }
 }
