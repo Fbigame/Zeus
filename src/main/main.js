@@ -3,6 +3,12 @@ const path = require('path')
 const fs = require('fs').promises
 const { autoUpdater } = require('electron-updater')
 
+// 处理 Squirrel 安装/卸载/更新事件
+// 这样可以正确处理 Windows 应用列表中的卸载操作
+if (require('electron-squirrel-startup')) {
+  app.quit();
+}
+
 // 配置自动更新
 autoUpdater.autoDownload = false
 autoUpdater.autoInstallOnAppQuit = true

@@ -29,19 +29,19 @@ module.exports = {
     {
       name: '@electron-forge/maker-squirrel',
       config: {
-        // Windows安装包图标（移除网络依赖）
+        // Windows安装包图标
         setupIcon: './assets/icon.ico',
         // 应用显示名称
         name: 'HearthstoneClientTool',
         title: 'Hearthstone Client Tool',
         // 安装程序可执行文件名
         setupExe: 'HearthstoneClientToolSetup.exe',
-        // 创建桌面快捷方式
-        setupIcon: './assets/icon.ico',
-        // 加载动画 GIF（可选）
-        // loadingGif: './assets/install.gif',
+        // 应用图标（显示在控制面板）
+        iconUrl: 'https://raw.githubusercontent.com/Fbigame/Zeus/main/assets/icon.ico',
         // 不静默安装
-        noMsi: true
+        noMsi: true,
+        // 允许卸载
+        remoteReleases: false
       },
     },
     {
