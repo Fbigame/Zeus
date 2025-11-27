@@ -73,6 +73,37 @@ class AchieveSystem {
             42: 'STARTER_QUESTS_COMPLETED (新手任务完成)'
         };
         
+        // 游戏模式映射
+        this.gameModeMap = {
+            '-1': 'UNKNOWN (未知)',
+            0: 'ANY (任意)',
+            1: 'ANY_AI (任意AI)',
+            2: 'ANY_PRACTICE (任意练习)',
+            3: 'BASIC_AI (基础AI)',
+            4: 'EXPERT_AI (专家AI)',
+            5: 'ADVENTURE (冒险)',
+            6: 'TUTORIAL (教程)',
+            7: 'MATCHMAKER (匹配)',
+            8: 'PLAY_MODE (对战模式)',
+            9: 'PLAY_MODE_STANDARD (标准模式)',
+            10: 'PLAY_MODE_WILD (狂野模式)',
+            11: 'PLAY_MODE_TB (乱斗模式)',
+            12: 'RANKED (排名)',
+            13: 'CASUAL (休闲)',
+            14: 'ARENA (竞技场)',
+            15: 'FRIENDLY (友谊赛)',
+            16: 'TAVERNBRAWL (酒馆乱斗)',
+            17: 'TB_FSG_BRAWL (FSG乱斗)',
+            18: 'ANY_FSG_MODE (任意FSG模式)',
+            19: 'RANKED_OR_ARENA (排名或竞技场)',
+            20: 'OTHER (其他)',
+            21: 'ANY_NON_ADVENTURE (非冒险)',
+            22: 'BATTLEGROUNDS (酒馆战棋)',
+            23: 'DUELS (决斗)',
+            24: 'PLAY_MODE_CLASSIC (经典模式)',
+            25: 'MERCENARIES (佣兵)'
+        };
+        
         // 对比模式数据
         this.compareData = {
             newVersion: '',
@@ -619,7 +650,7 @@ class AchieveSystem {
                 <div class="detail-grid">
                     <div class="detail-item">
                         <div class="detail-label">游戏模式</div>
-                        <div class="detail-value">${achieve.m_gameMode}</div>
+                        <div class="detail-value">${this.gameModeMap[achieve.m_gameMode] || achieve.m_gameMode}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">种族ID</div>
@@ -1025,6 +1056,9 @@ class AchieveSystem {
         }
         if (field === 'm_triggered') {
             return this.triggerMap[value] || value;
+        }
+        if (field === 'm_gameMode') {
+            return this.gameModeMap[value] || value;
         }
         return this.formatValue(value);
     }
