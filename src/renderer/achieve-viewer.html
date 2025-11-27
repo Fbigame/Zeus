@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACHIEVE 系统查看器</title>
+    <link rel="stylesheet" href="common-buttons.css">
+    <link rel="stylesheet" href="achieve-viewer.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1>🏆 ACHIEVE 系统查看器</h1>
+                <p>旧版成就系统 (父子关系结构)</p>
+            </div>
+            <button id="backBtn" class="back-btn">🏠 返回主页</button>
+        </header>
+
+        <!-- 版本选择区域 -->
+        <section class="version-section">
+            <!-- 模式切换 -->
+            <div class="mode-toggle-section">
+                <h3>🎯 选择模式</h3>
+                <div class="mode-toggle-buttons">
+                    <button id="normalModeBtn" class="mode-btn active">📋 普通模式</button>
+                    <button id="compareModeBtn" class="mode-btn">🔄 对比模式</button>
+                </div>
+            </div>
+
+            <div class="version-selection" id="versionSelection">
+                <h3>📦 选择版本</h3>
+                <div class="version-controls">
+                    <select id="versionSelect" class="version-select">
+                        <option value="">-- 选择版本 --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 对比版本选择 -->
+            <div id="compareVersionSection" class="compare-version-section" style="display: none;">
+                <div class="compare-version-selects">
+                    <div class="version-select-group">
+                        <label for="newVersionSelect">新版本</label>
+                        <select id="newVersionSelect" class="version-select">
+                            <option value="">-- 选择新版本 --</option>
+                        </select>
+                    </div>
+                    <div class="version-select-group">
+                        <label for="oldVersionSelect">旧版本</label>
+                        <select id="oldVersionSelect" class="version-select">
+                            <option value="">-- 选择旧版本 --</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="startCompareBtn" class="load-btn" disabled>🔍 开始对比</button>
+            </div>
+
+            <!-- 普通模式加载按钮 -->
+            <div id="normalLoadSection" class="normal-load-section">
+                <button id="loadAchievesBtn" class="load-btn" disabled>📥 加载成就</button>
+            </div>
+        </section>
+
+        <!-- 成就列表区域 -->
+        <section id="achieveListSection" class="achieve-list-section" style="display: none;">
+            <div class="achieve-container">
+                <div class="achieve-header">
+                    <div class="achieve-header-top">
+                        <h2 id="achieveTitle">ACHIEVE 列表</h2>
+                        <div class="achieve-operations-section">
+                            <button id="collapseAllBtn" class="operation-btn">📁 全部折叠</button>
+                            <button id="expandAllBtn" class="operation-btn">📂 全部展开</button>
+                            <button id="exportAchievesBtn" class="export-btn">💾 导出成就</button>
+                        </div>
+                    </div>
+                    <div class="achieve-summary" id="achieveSummary">
+                        <span>总计: <strong id="totalCount">0</strong></span>
+                        <span>已启用: <strong id="enabledCount">0</strong></span>
+                        <span>根成就: <strong id="rootCount">0</strong></span>
+                        <span>子成就: <strong id="childCount">0</strong></span>
+                    </div>
+                </div>
+
+                <!-- 视图切换 -->
+                <div class="view-toggle">
+                    <button id="treeViewBtn" class="view-btn active">🌳 树形视图</button>
+                    <button id="listViewBtn" class="view-btn">📋 列表视图</button>
+                </div>
+
+                <!-- 过滤器 -->
+                <div class="achieve-filters">
+                    <select id="achTypeFilter" class="filter-select">
+                        <option value="">全部类型</option>
+                    </select>
+                    <select id="enabledFilter" class="filter-select">
+                        <option value="">全部状态</option>
+                        <option value="1">已启用</option>
+                        <option value="0">未启用</option>
+                    </select>
+                    <select id="rewardFilter" class="filter-select">
+                        <option value="">全部奖励</option>
+                    </select>
+                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索成就 (ID, 名称, 描述, noteDesc)...">
+                </div>
+
+                <!-- 树形视图 -->
+                <div class="achieve-tree-view" id="achieveTreeView">
+                    <!-- 动态生成树形结构 -->
+                </div>
+
+                <!-- 列表视图 -->
+                <div class="achieve-list" id="achieveList" style="display: none;">
+                    <!-- 动态生成列表 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 对比结果区域 -->
+        <section id="compareResultsSection" class="compare-results-section" style="display: none;">
+            <div class="achieve-container">
+                <div class="achieve-header">
+                    <h2>对比结果</h2>
+                    <button id="exportCompareBtn" class="export-btn">💾 导出对比结果</button>
+                </div>
+
+                <div class="compare-summary" id="compareSummary">
+                    <span class="added">新增: <strong id="addedCount">0</strong></span>
+                    <span class="modified">修改: <strong id="modifiedCount">0</strong></span>
+                    <span class="deleted">删除: <strong id="deletedCount">0</strong></span>
+                </div>
+
+                <div class="compare-tabs">
+                    <button class="compare-tab active" data-tab="added">新增</button>
+                    <button class="compare-tab" data-tab="modified">修改</button>
+                    <button class="compare-tab" data-tab="deleted">删除</button>
+                </div>
+
+                <div class="compare-content">
+                    <div class="compare-tab-content active" id="addedContent"></div>
+                    <div class="compare-tab-content" id="modifiedContent"></div>
+                    <div class="compare-tab-content" id="deletedContent"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 成就详情弹窗 -->
+        <div id="achieveModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalAchieveName">成就详情</h3>
+                    <button class="close-btn" onclick="document.getElementById('achieveModal').style.display='none'">✖</button>
+                </div>
+                <div class="modal-body">
+                    <div id="achieveDetails">
+                        <!-- 动态生成详情内容 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared-config.js"></script>
+    <script src="data-manager.js"></script>
+    <script src="achieve-viewer.js"></script>
+</body>
+</html>

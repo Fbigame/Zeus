@@ -745,7 +745,12 @@
                     <button id="selectAchievementViewerBtn" class="feature-btn">
                         <div class="feature-icon">🏆</div>
                         <div class="feature-title">成就查看器</div>
-                        <div class="feature-desc">查看游戏成就和成就分类</div>
+                        <div class="feature-desc">新版成就系统 (分类结构)</div>
+                    </button>
+                    <button id="selectAchieveViewerBtn" class="feature-btn">
+                        <div class="feature-icon">🎖️</div>
+                        <div class="feature-title">奖励查看器</div>
+                        <div class="feature-desc">旧版成就系统 (父子结构)</div>
                     </button>
                 </div>
             </div>
@@ -971,6 +976,10 @@
 
         document.getElementById('selectAchievementViewerBtn').addEventListener('click', () => {
             window.location.href = 'achievement-viewer.html';
+        });
+
+        document.getElementById('selectAchieveViewerBtn').addEventListener('click', () => {
+            window.location.href = 'achieve-viewer.html';
         });
     </script>
     <script src="shared-config.js"></script>
