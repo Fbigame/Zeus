@@ -444,7 +444,7 @@
 
         .feature-buttons {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 20px;
             margin-top: 30px;
         }
@@ -737,6 +737,11 @@
                         <div class="feature-title">数据查看器</div>
                         <div class="feature-desc">浏览所有游戏数据文件</div>
                     </button>
+                    <button id="selectQuestViewerBtn" class="feature-btn">
+                        <div class="feature-icon">🎯</div>
+                        <div class="feature-title">任务查看器</div>
+                        <div class="feature-desc">查看游戏任务和任务池数据</div>
+                    </button>
                 </div>
             </div>
         </section>
@@ -953,6 +958,10 @@
 
         document.getElementById('selectRulesetBtn').addEventListener('click', () => {
             window.location.href = 'deck-ruleset.html';
+        });
+
+        document.getElementById('selectQuestViewerBtn').addEventListener('click', () => {
+            window.location.href = 'quest-viewer.html';
         });
     </script>
     <script src="shared-config.js"></script>

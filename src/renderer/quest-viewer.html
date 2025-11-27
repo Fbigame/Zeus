@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <title>炉石传说任务查看器</title>
+    <link rel="stylesheet" href="common-buttons.css">
+    <link rel="stylesheet" href="quest-viewer.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 炉石传说任务查看器</h1>
+        
+        <button id="backToIndexBtn" class="back-to-menu-btn">← 返回首页</button>
+
+        <!-- 版本选择区域 -->
+        <section class="version-selection-section">
+            <div class="version-container">
+                <h2>📂 版本选择</h2>
+                <div id="versionDetection" class="version-detection">
+                    <div class="detection-status">
+                        <span id="detectionStatus">正在检测版本文件夹...</span>
+                    </div>
+                    <div class="detection-info" id="dataPathInfo" style="margin-top: 8px; font-size: 11px; color: #6c757d;"></div>
+                </div>
+                
+                <div id="versionSelector" class="version-selector" style="display: none;">
+                    <!-- 模式切换 -->
+                    <div class="mode-toggle">
+                        <button id="singleModeBtn" class="mode-btn active">📋 查看模式</button>
+                        <button id="compareModeBtn" class="mode-btn">🔍 对比模式</button>
+                    </div>
+                    
+                    <!-- 单版本选择 -->
+                    <div id="singleVersionSection" class="version-single">
+                        <div class="version-item">
+                            <h3>📦 选择版本</h3>
+                            <select id="versionSelect" class="version-select">
+                                <option value="">请选择版本</option>
+                            </select>
+                            <div class="version-info" id="versionInfo"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 双版本对比选择 -->
+                    <div id="compareVersionSection" class="version-compare" style="display: none;">
+                        <div class="version-pair">
+                            <div class="version-item">
+                                <h3>📦 旧版本</h3>
+                                <select id="oldVersionSelect" class="version-select">
+                                    <option value="">请选择旧版本</option>
+                                </select>
+                                <div class="version-info" id="oldVersionInfo"></div>
+                            </div>
+                            <div class="version-item">
+                                <h3>📦 新版本</h3>
+                                <select id="newVersionSelect" class="version-select">
+                                    <option value="">请选择新版本</option>
+                                </select>
+                                <div class="version-info" id="newVersionInfo"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="load-controls">
+                        <button id="loadQuestsBtn" class="load-btn" disabled>📥 加载任务</button>
+                        <button id="compareQuestsBtn" class="load-btn" style="display: none;" disabled>🔍 对比任务</button>
+                        <button id="refreshVersionsBtn" class="refresh-btn">🔄 刷新版本</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 加载进度区域 -->
+        <section id="loadProgressSection" class="load-progress-section" style="display: none;">
+            <div class="progress-container">
+                <h2>⚙️ 正在加载</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">准备开始加载...</div>
+            </div>
+        </section>
+
+        <!-- 任务列表区域 -->
+        <section id="questListSection" class="quest-list-section" style="display: none;">
+            <div class="quest-container">
+                <div class="quest-header">
+                    <div class="quest-header-top">
+                        <h2>🎯 任务列表</h2>
+                        <div>
+                            <button id="backToVersionBtn" class="back-btn">← 返回选择</button>
+                            <button id="exportQuestsBtn" class="export-btn">💾 导出任务</button>
+                        </div>
+                    </div>
+                    
+                    <div class="quest-summary" id="questSummary">
+                        <!-- 任务统计信息 -->
+                    </div>
+                    
+                    <!-- 视图切换 -->
+                    <div class="view-toggle">
+                        <button id="viewByQuestBtn" class="view-toggle-btn active">📋 按任务查看</button>
+                        <button id="viewByPoolBtn" class="view-toggle-btn">🗂️ 按任务池查看</button>
+                    </div>
+                </div>
+
+                <!-- 筛选器 -->
+                <div class="quest-filters">
+                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索任务名称或描述...">
+                    <div class="filter-row">
+                        <select id="typeFilter" class="filter-select">
+                            <option value="">所有类型</option>
+                        </select>
+                        <select id="rewardFilter" class="filter-select">
+                            <option value="">所有奖励</option>
+                            <option value="low">低奖励 (≤400 XP)</option>
+                            <option value="medium">中等奖励 (400-1000 XP)</option>
+                            <option value="high">高奖励 (≥1000 XP)</option>
+                        </select>
+                        <label>
+                            <input type="checkbox" id="extraRewardFilter">
+                            仅显示有额外奖励
+                        </label>
+                        <label>
+                            <input type="checkbox" id="chainOnlyFilter">
+                            仅显示链式任务
+                        </label>
+                        <label>
+                            <input type="checkbox" id="abandonableFilter">
+                            仅显示可放弃任务
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="quest-list" id="questList">
+                    <!-- 任务列表将在这里显示 -->
+                </div>
+                
+                <!-- 任务池视图 -->
+                <div class="quest-pool-view" id="questPoolView" style="display: none;">
+                    <!-- 任务池列表将在这里显示 -->
+                </div>
+                
+                <!-- 任务对比视图 -->
+                <div class="quest-compare-view" id="questCompareView" style="display: none;">
+                    <!-- 任务对比结果将在这里显示 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 任务详情模态框 -->
+        <div id="questModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalQuestName">任务详情</h3>
+                    <button id="closeModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="questDetails">
+                        <!-- 任务详细信息将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared-config.js"></script>
+    <script src="data-manager.js"></script>
+    <script src="quest-viewer.js"></script>
+</body>
+</html>

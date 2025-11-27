@@ -1220,12 +1220,22 @@ function getGameTagName(tagId) {
 }
 
 // 格式化标签显示（ID + 名称 + 值）
-function formatGameTag(tagId, value) {
+function formatGameTag(tagId, value = null) {
     const tagName = GameTags[tagId];
+    
+    // 如果没有传 value，只显示标签名称和 ID
+    if (value === null || value === undefined) {
+        if (tagName) {
+            return `${tagName} (${tagId})`;
+        }
+        return `未知标签 (${tagId})`;
+    }
+    
+    // 如果传了 value，显示完整信息
     if (tagName) {
         return `${tagName} (${tagId}=${value})`;
     }
-    return `标签${tagId} (${tagId}=${value})`;
+    return `未知标签 (${tagId}=${value})`;
 }
 
 // 导出到全局
