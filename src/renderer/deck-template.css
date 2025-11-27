@@ -509,6 +509,17 @@ h4 {
     flex: 1;
 }
 
+/* 可点击卡牌名样式 */
+.clickable-card {
+    cursor: pointer;
+    transition: color 0.2s, text-decoration 0.2s;
+}
+
+.clickable-card:hover {
+    color: #3498db;
+    text-decoration: underline;
+}
+
 /* 备牌样式 */
 .sideboard-item {
     margin-left: 45px;

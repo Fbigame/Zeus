@@ -11,6 +11,7 @@ class DeckTemplateSystem {
         this.classHeroIds = {}; // 职业ID到默认英雄ID的映射
         this.sideboardMap = new Map(); // deckCardId到sideboardCardId的映射
         this.cardCostMap = new Map(); // 卡牌ID到费用的映射
+        this.cardSideboardTypeMap = new Map(); // 卡牌ID到SIDEBOARD_TYPE的映射
         
         this.init();
     }
@@ -424,6 +425,10 @@ class DeckTemplateSystem {
             await this.loadCardNames(version);
             console.log('✅ 卡牌名称加载完成');
             
+            this.updateProgress(88, '正在加载卡牌标签...');
+            await this.loadCardTags(version);
+            console.log('✅ 卡牌标签加载完成');
+            
             this.updateProgress(90, '正在加载备牌信息...');
             await this.loadSideboardCards(version);
             console.log('✅ 备牌信息加载完成');
@@ -534,29 +539,49 @@ class DeckTemplateSystem {
         const data = JSON.parse(result.data);
         const cards = data.Records || [];
         
-        // 创建卡牌ID到名称和费用的映射
+        // 创建卡牌ID到名称的映射
         this.cardNameMap.clear();
-        this.cardCostMap.clear();
         cards.forEach(card => {
             const cardId = card.m_ID || card.ID;
             const cardName = card.m_name ? this.extractLocalizedText(card.m_name) : '';
             
-            // 从 CARD_TAG 中查找费用，或从卡牌数据中直接获取
-            let cost = 0;
-            if (card.m_tags && Array.isArray(card.m_tags)) {
-                const costTag = card.m_tags.find(tag => tag.m_tagId === 48 || tag.tagId === 48);
-                if (costTag) {
-                    cost = costTag.m_tagValue || costTag.tagValue || 0;
-                }
-            }
-            
             if (cardId && cardName) {
                 this.cardNameMap.set(cardId, cardName);
-                this.cardCostMap.set(cardId, cost);
             }
         });
         
-        console.log(`✅ 已加载 ${this.cardNameMap.size} 张卡牌的名称和费用`);
+        console.log(`✅ 已加载 ${this.cardNameMap.size} 张卡牌的名称`);
+    }
+    
+    // 加载卡牌标签（费用等信息）
+    async loadCardTags(version) {
+        const filePath = `data/${version}/CARD_TAG.json`;
+        const result = await window.fileAPI.readFile(filePath);
+        
+        if (!result.success) {
+            console.warn('无法读取 CARD_TAG.json，卡牌费用将不可用');
+            return;
+        }
+        
+        const data = JSON.parse(result.data);
+        const tags = data.Records || [];
+        
+        // 创建卡牌ID到费用和SIDEBOARD_TYPE的映射
+        this.cardCostMap.clear();
+        this.cardSideboardTypeMap.clear();
+        tags.forEach(tag => {
+            const cardId = tag.m_cardId || tag.cardId;
+            const tagId = tag.m_tagId || tag.tagId;
+            const tagValue = tag.m_tagValue || tag.tagValue;
+            
+            if (cardId && tagId === 48) {  // 48 是费用标签
+                this.cardCostMap.set(cardId, tagValue || 0);
+            } else if (cardId && tagId === 3427) {  // 3427 是 SIDEBOARD_TYPE
+                this.cardSideboardTypeMap.set(cardId, tagValue || 0);
+            }
+        });
+        
+        console.log(`✅ 已加载 ${this.cardCostMap.size} 张卡牌的费用信息`);
     }
     
     // 获取卡牌名称
@@ -564,9 +589,22 @@ class DeckTemplateSystem {
         return this.cardNameMap.get(cardId) || '';
     }
     
-    // 获取卡牌费用
-    getCardCost(cardId) {
-        return this.cardCostMap.get(cardId) || 0;
+    // 获取卡牌费用（如果是SIDEBOARD_TYPE=2的卡，计算备牌费用之和）
+    getCardCost(cardId, sideboardCardIds = null) {
+        const baseCost = this.cardCostMap.get(cardId) || 0;
+        
+        // 检查是否有SIDEBOARD_TYPE=2
+        const sideboardType = this.cardSideboardTypeMap.get(cardId);
+        if (sideboardType === 2 && sideboardCardIds && sideboardCardIds.length > 0) {
+            // 计算所有备牌的费用之和
+            let totalSideboardCost = 0;
+            sideboardCardIds.forEach(sideboardCardId => {
+                totalSideboardCost += this.cardCostMap.get(sideboardCardId) || 0;
+            });
+            return totalSideboardCost;
+        }
+        
+        return baseCost;
     }
     
     // 加载备牌信息
@@ -843,8 +881,29 @@ class DeckTemplateSystem {
                     ${deck.cards
                         // 按费用排序，费用相同则按卡牌ID排序
                         .sort((a, b) => {
-                            const costA = this.getCardCost(a.cardId);
-                            const costB = this.getCardCost(b.cardId);
+                            // 先获取备牌信息用于计算费用
+                            const getSideboardCards = (card) => {
+                                const sideboardCards = [];
+                                if (card.deckCardIds && card.deckCardIds.length > 0) {
+                                    card.deckCardIds.forEach(deckCardId => {
+                                        const sideboardCardIds = this.sideboardMap.get(deckCardId);
+                                        if (sideboardCardIds && Array.isArray(sideboardCardIds)) {
+                                            sideboardCardIds.forEach(sideboardCardId => {
+                                                if (!sideboardCards.includes(sideboardCardId)) {
+                                                    sideboardCards.push(sideboardCardId);
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                                return sideboardCards;
+                            };
+                            
+                            const sideboardA = getSideboardCards(a);
+                            const sideboardB = getSideboardCards(b);
+                            const costA = this.getCardCost(a.cardId, sideboardA);
+                            const costB = this.getCardCost(b.cardId, sideboardB);
+                            
                             if (costA !== costB) {
                                 return costA - costB;
                             }
@@ -852,7 +911,6 @@ class DeckTemplateSystem {
                         })
                         .map(card => {
                         const cardName = this.getCardName(card.cardId);
-                        const cardCost = this.getCardCost(card.cardId);
                         
                         // 查找该卡的所有备牌
                         const sideboardCards = [];
@@ -869,12 +927,15 @@ class DeckTemplateSystem {
                             });
                         }
                         
+                        // 获取费用（如果是SIDEBOARD_TYPE=2，会自动计算备牌费用之和）
+                        const cardCost = this.getCardCost(card.cardId, sideboardCards);
+                        
                         let html = `
                         <div class="card-list-item">
                             <span class="card-cost">[费用${cardCost}]</span>
                             <span class="card-count">${card.count}x</span>
                             <span class="card-id">ID: ${card.cardId}</span>
-                            ${cardName ? `<span class="card-name-text">${cardName}</span>` : ''}
+                            ${cardName ? `<span class="card-name-text clickable-card" onclick="window.cardDetailModal.show(${card.cardId}, '${this.currentVersion}')">${cardName}</span>` : ''}
                         </div>
                         `;
                         
@@ -887,7 +948,7 @@ class DeckTemplateSystem {
                                 <div class="card-list-item sideboard-item">
                                     <span class="card-cost">[费用${sideboardCardCost}]</span>
                                     <span class="card-id">ID: ${sideboardCardId}</span>
-                                    ${sideboardCardName ? `<span class="card-name-text">${sideboardCardName}</span>` : ''}
+                                    ${sideboardCardName ? `<span class="card-name-text clickable-card" onclick="window.cardDetailModal.show(${sideboardCardId}, '${this.currentVersion}')">${sideboardCardName}</span>` : ''}
                                 </div>
                                 `;
                             });
