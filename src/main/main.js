@@ -379,7 +379,10 @@ ipcMain.handle('download-update', async () => {
 // IPC 处理器 - 安装更新
 ipcMain.handle('install-update', async () => {
   try {
-    autoUpdater.quitAndInstall()
+    // 对于 Squirrel.Windows，需要强制退出并安装
+    // isSilent = false: 不静默安装，显示安装界面
+    // isForceRunAfter = true: 安装完成后重新启动应用
+    autoUpdater.quitAndInstall(false, true)
     return { success: true }
   } catch (error) {
     return { success: false, error: error.message }
