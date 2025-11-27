@@ -7,6 +7,10 @@ class DeckRulesetSystem {
         this.filteredRulesets = [];
         this.subsets = {}; // 存储子集数据
         this.subsetRules = {}; // 存储子集规则数据
+        this.userNotes = { SUBSET: {} }; // 存储用户备注
+        this.currentEditingRuleId = null; // 当前正在编辑备注的规则ID
+        this.compareMode = false; // 对比模式
+        this.selectedRulesets = new Set(); // 选中的规则集
         
         // 规则类型映射 (DeckRulesetRule.RuleType)
         this.ruleTypes = {
@@ -66,6 +70,7 @@ class DeckRulesetSystem {
     async init() {
         console.log('🚀 DeckRulesetSystem 初始化开始');
         this.setupEventListeners();
+        await this.loadUserNotes();
         await this.detectVersions();
         console.log('✅ DeckRulesetSystem 初始化完成');
     }
@@ -99,6 +104,59 @@ class DeckRulesetSystem {
         document.getElementById('subsetModal').addEventListener('click', (e) => {
             if (e.target.id === 'subsetModal') this.closeSubsetModal();
         });
+        
+        // 规则备注模态框
+        document.getElementById('closeRuleNoteModal').addEventListener('click', () => this.closeRuleNoteModal());
+        document.getElementById('cancelRuleNoteBtn').addEventListener('click', () => this.closeRuleNoteModal());
+        document.getElementById('saveRuleNoteBtn').addEventListener('click', () => this.saveRuleNoteFromModal());
+        document.getElementById('ruleNoteModal').addEventListener('click', (e) => {
+            if (e.target.id === 'ruleNoteModal') this.closeRuleNoteModal();
+        });
+        
+        // 对比功能
+        document.getElementById('toggleCompareBtn').addEventListener('click', () => this.toggleCompareMode());
+        document.getElementById('selectAllBtn').addEventListener('click', () => this.selectAll());
+        document.getElementById('compareRulesetsBtn').addEventListener('click', () => this.showCompareResults());
+        document.getElementById('clearSelectionBtn').addEventListener('click', () => this.clearSelection());
+        document.getElementById('closeCompareModal').addEventListener('click', () => this.closeCompareModal());
+        document.getElementById('compareModal').addEventListener('click', (e) => {
+            if (e.target.id === 'compareModal') this.closeCompareModal();
+        });
+    }
+    
+    // 加载用户备注
+    async loadUserNotes() {
+        try {
+            const result = await window.fileAPI.readFile('data/user-notes.json');
+            if (result.success) {
+                this.userNotes = JSON.parse(result.data);
+                console.log('✅ 用户备注加载成功');
+            } else {
+                console.warn('⚠️ 用户备注文件不存在，使用默认配置');
+                this.userNotes = { SUBSET: {}, CARD: {}, DECK_RULESET: {}, DECK_RULESET_RULE: {} };
+            }
+        } catch (error) {
+            console.error('❌ 加载用户备注失败:', error);
+            this.userNotes = { SUBSET: {}, CARD: {}, DECK_RULESET: {}, DECK_RULESET_RULE: {} };
+        }
+    }
+    
+    // 保存用户备注
+    async saveUserNotes() {
+        try {
+            const data = JSON.stringify(this.userNotes, null, 2);
+            const result = await window.fileAPI.writeFile('data/user-notes.json', data);
+            if (result.success) {
+                console.log('✅ 用户备注保存成功');
+                return true;
+            } else {
+                console.error('❌ 保存用户备注失败:', result.error);
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ 保存用户备注失败:', error);
+            return false;
+        }
     }
     
     // 检测版本文件夹
@@ -469,28 +527,67 @@ class DeckRulesetSystem {
             return;
         }
         
-        container.innerHTML = this.filteredRulesets.map(ruleset => `
-            <div class="ruleset-item" onclick="rulesetSystem.showRulesetDetails(${ruleset.id})">
-                <div class="ruleset-item-header">
-                    <div class="ruleset-name">规则集 ${ruleset.id}</div>
-                    <div class="ruleset-badge">${ruleset.ruleCount} 条规则</div>
+        container.innerHTML = this.filteredRulesets.map(ruleset => {
+            const rulesetNote = this.userNotes.DECK_RULESET[ruleset.id] || '';
+            const isSelected = this.selectedRulesets.has(ruleset.id);
+            
+            if (this.compareMode) {
+                return `
+                <div class="ruleset-item ${isSelected ? 'selected' : ''}" onclick="rulesetSystem.toggleRulesetSelection(${ruleset.id})" style="cursor: pointer;">
+                    <div class="ruleset-item-header">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); rulesetSystem.toggleRulesetSelection(${ruleset.id})" style="width: 18px; height: 18px; cursor: pointer;">
+                            <div class="ruleset-name">
+                                规则集 ${ruleset.id}
+                                ${rulesetNote ? `<span style="color: #27ae60; font-size: 13px; margin-left: 8px;">(📝 ${rulesetNote})</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="ruleset-badge">${ruleset.ruleCount} 条规则</div>
+                    </div>
+                    <div class="ruleset-info">
+                        <div class="ruleset-stat">
+                            <span class="stat-label">ID:</span>
+                            <span class="stat-value">${ruleset.id}</span>
+                        </div>
+                        <div class="ruleset-stat">
+                            <span class="stat-label">资产标志:</span>
+                            <span class="stat-value">${ruleset.assetFlags}</span>
+                        </div>
+                        <div class="ruleset-stat">
+                            <span class="stat-label">规则数量:</span>
+                            <span class="stat-value">${ruleset.ruleCount}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="ruleset-info">
-                    <div class="ruleset-stat">
-                        <span class="stat-label">ID:</span>
-                        <span class="stat-value">${ruleset.id}</span>
+            `;
+            } else {
+                return `
+                <div class="ruleset-item" onclick="rulesetSystem.showRulesetDetails(${ruleset.id})">
+                    <div class="ruleset-item-header">
+                        <div class="ruleset-name">
+                            规则集 ${ruleset.id}
+                            ${rulesetNote ? `<span style="color: #27ae60; font-size: 13px; margin-left: 8px;">(📝 ${rulesetNote})</span>` : ''}
+                        </div>
+                        <div class="ruleset-badge">${ruleset.ruleCount} 条规则</div>
                     </div>
-                    <div class="ruleset-stat">
-                        <span class="stat-label">资产标志:</span>
-                        <span class="stat-value">${ruleset.assetFlags}</span>
-                    </div>
-                    <div class="ruleset-stat">
-                        <span class="stat-label">规则数量:</span>
-                        <span class="stat-value">${ruleset.ruleCount}</span>
+                    <div class="ruleset-info">
+                        <div class="ruleset-stat">
+                            <span class="stat-label">ID:</span>
+                            <span class="stat-value">${ruleset.id}</span>
+                        </div>
+                        <div class="ruleset-stat">
+                            <span class="stat-label">资产标志:</span>
+                            <span class="stat-value">${ruleset.assetFlags}</span>
+                        </div>
+                        <div class="ruleset-stat">
+                            <span class="stat-label">规则数量:</span>
+                            <span class="stat-value">${ruleset.ruleCount}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+            }
+        }).join('');
     }
     
     showRulesetDetails(rulesetId) {
@@ -498,6 +595,8 @@ class DeckRulesetSystem {
         if (!ruleset) return;
         
         document.getElementById('modalRulesetName').textContent = `规则集 ${ruleset.id}`;
+        
+        const currentNote = this.userNotes.DECK_RULESET[rulesetId] || '';
         
         const details = document.getElementById('rulesetDetails');
         details.innerHTML = `
@@ -516,13 +615,23 @@ class DeckRulesetSystem {
                 </div>
             </div>
             
+            <div class="ruleset-details-info" style="margin-top: 20px;">
+                <h4>备注</h4>
+                <textarea id="rulesetNoteInput" style="width: 100%; min-height: 60px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-family: inherit; box-sizing: border-box;" placeholder="在此添加规则集备注...">${currentNote}</textarea>
+            </div>
+            
             <div class="ruleset-details-rules">
                 <h4>规则列表 (共${ruleset.rules.length}条)</h4>
                 <div class="rule-list">
-                    ${ruleset.rules.map(rule => `
+                    ${ruleset.rules.map(rule => {
+                        const ruleNote = this.userNotes.DECK_RULESET_RULE[rule.id] || '';
+                        return `
                         <div class="rule-list-item">
                             <div class="rule-header">
-                                <span class="rule-id">规则 #${rule.id}</span>
+                                <span class="rule-id" style="cursor: pointer;" onclick="rulesetSystem.editRuleNote(${rule.id})" title="点击编辑备注">
+                                    规则 #${rule.id}
+                                    ${ruleNote ? `<span style="color: #27ae60; font-size: 12px; margin-left: 8px;">(📝 ${ruleNote})</span>` : ''}
+                                </span>
                                 <span class="rule-type">${rule.ruleTypeName}</span>
                             </div>
                             <div class="rule-details">
@@ -534,6 +643,7 @@ class DeckRulesetSystem {
                                 ${rule.appliesToSubsetId ? `
                                     <div class="rule-detail-item">
                                         <strong>应用于子集:</strong> ${rule.appliesToSubsetId}
+                                        ${this.userNotes.SUBSET[rule.appliesToSubsetId] ? `<span style="color: #27ae60; font-size: 12px;"> (${this.userNotes.SUBSET[rule.appliesToSubsetId]})</span>` : ''}
                                         <button class="view-subset-btn" onclick="rulesetSystem.showSubsetDetails(${rule.appliesToSubsetId}); return false;">🔍 查看</button>
                                     </div>
                                 ` : ''}
@@ -556,9 +666,11 @@ class DeckRulesetSystem {
                                 ` : ''}
                                 ${rule.subsets.length > 0 ? `
                                     <div class="rule-detail-item">
-                                        <strong>关联子集:</strong> ${rule.subsets.map(subsetId => 
-                                            `<a href="#" class="subset-link" onclick="rulesetSystem.showSubsetDetails(${subsetId}); return false;">${subsetId}</a>`
-                                        ).join(', ')}
+                                        <strong>关联子集:</strong> ${rule.subsets.map(subsetId => {
+                                            const note = this.userNotes.SUBSET[subsetId];
+                                            const noteText = note ? ` <span style="color: #27ae60; font-size: 12px;">(${note})</span>` : '';
+                                            return `<a href="#" class="subset-link" onclick="rulesetSystem.showSubsetDetails(${subsetId}); return false;">${subsetId}</a>${noteText}`;
+                                        }).join(', ')}
                                     </div>
                                 ` : ''}
                                 <div class="rule-detail-item">
@@ -570,15 +682,22 @@ class DeckRulesetSystem {
                                 </div>
                             </div>
                         </div>
-                    `).join('')}
+                    `;
+                    }).join('')}
                 </div>
             </div>
-        `;
+        `;  
         
         document.getElementById('rulesetModal').style.display = 'block';
-    }
-    
-    closeModal() {
+        
+        // 添加失去焦点时自动保存规则集备注
+        const rulesetNoteInput = document.getElementById('rulesetNoteInput');
+        if (rulesetNoteInput) {
+            rulesetNoteInput.addEventListener('blur', () => {
+                this.saveRulesetNote(rulesetId);
+            });
+        }
+    }    closeModal() {
         document.getElementById('rulesetModal').style.display = 'none';
     }
     
@@ -590,6 +709,8 @@ class DeckRulesetSystem {
         }
         
         document.getElementById('modalSubsetName').textContent = `子集 ${subsetId}`;
+        
+        const currentNote = this.userNotes.SUBSET[subsetId] || '';
         
         const details = document.getElementById('subsetDetails');
         details.innerHTML = `
@@ -603,6 +724,11 @@ class DeckRulesetSystem {
                         <strong>资产标志:</strong> ${subset.m_assetFlags || 'N/A'}
                     </div>
                 </div>
+            </div>
+            
+            <div class="ruleset-details-info" style="margin-top: 20px;">
+                <h4>备注</h4>
+                <textarea id="subsetNoteInput" style="width: 100%; min-height: 60px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-family: inherit; box-sizing: border-box;" placeholder="在此添加子集备注...">${currentNote}</textarea>
             </div>
             
             <div class="ruleset-details-rules">
@@ -656,10 +782,126 @@ class DeckRulesetSystem {
         `;
         
         document.getElementById('subsetModal').style.display = 'block';
+        
+        // 添加失去焦点时自动保存
+        const noteInput = document.getElementById('subsetNoteInput');
+        if (noteInput) {
+            noteInput.addEventListener('blur', () => {
+                this.saveSubsetNote(subsetId, true);
+            });
+        }
     }
     
     closeSubsetModal() {
         document.getElementById('subsetModal').style.display = 'none';
+    }
+    
+    saveSubsetNote(subsetId, silent = false) {
+        const noteInput = document.getElementById('subsetNoteInput');
+        if (!noteInput) return;
+        
+        const note = noteInput.value.trim();
+        
+        if (note) {
+            this.userNotes.SUBSET[subsetId] = note;
+        } else {
+            delete this.userNotes.SUBSET[subsetId];
+        }
+        
+        this.saveUserNotes().then(success => {
+            if (success) {
+                console.log(`✅ 子集 ${subsetId} 备注已保存`);
+                // 刷新当前显示的规则集列表
+                this.refreshCurrentView();
+            } else {
+                console.error(`❌ 子集 ${subsetId} 备注保存失败`);
+            }
+        });
+    }
+    
+    saveRulesetNote(rulesetId) {
+        const noteInput = document.getElementById('rulesetNoteInput');
+        if (!noteInput) return;
+        
+        const note = noteInput.value.trim();
+        
+        if (note) {
+            this.userNotes.DECK_RULESET[rulesetId] = note;
+        } else {
+            delete this.userNotes.DECK_RULESET[rulesetId];
+        }
+        
+        this.saveUserNotes().then(success => {
+            if (success) {
+                console.log(`✅ 规则集 ${rulesetId} 备注已保存`);
+                // 刷新规则集列表以显示更新的备注
+                this.displayRulesets();
+            } else {
+                console.error(`❌ 规则集 ${rulesetId} 备注保存失败`);
+            }
+        });
+    }
+    
+    // 刷新当前视图以显示最新备注
+    refreshCurrentView() {
+        // 如果规则集模态框是打开的，刷新它
+        const rulesetModal = document.getElementById('rulesetModal');
+        if (rulesetModal && rulesetModal.style.display === 'block') {
+            // 查找当前显示的规则集ID
+            const modalTitle = document.getElementById('modalRulesetName').textContent;
+            const match = modalTitle.match(/规则集 (\d+)/);
+            if (match) {
+                const rulesetId = parseInt(match[1]);
+                this.showRulesetDetails(rulesetId);
+            }
+        }
+    }
+    
+    // 编辑规则备注
+    editRuleNote(ruleId) {
+        this.currentEditingRuleId = ruleId;
+        const currentNote = this.userNotes.DECK_RULESET_RULE[ruleId] || '';
+        
+        document.getElementById('modalRuleNoteTitle').textContent = `编辑规则 #${ruleId} 备注`;
+        document.getElementById('ruleNoteInput').value = currentNote;
+        document.getElementById('ruleNoteModal').style.display = 'block';
+        
+        // 自动聚焦到输入框
+        setTimeout(() => {
+            document.getElementById('ruleNoteInput').focus();
+        }, 100);
+    }
+    
+    // 关闭规则备注模态框
+    closeRuleNoteModal() {
+        document.getElementById('ruleNoteModal').style.display = 'none';
+        this.currentEditingRuleId = null;
+    }
+    
+    // 从模态框保存规则备注
+    saveRuleNoteFromModal() {
+        const ruleId = this.currentEditingRuleId;
+        if (!ruleId) return;
+        
+        const noteInput = document.getElementById('ruleNoteInput');
+        const note = noteInput.value.trim();
+        
+        if (note) {
+            this.userNotes.DECK_RULESET_RULE[ruleId] = note;
+        } else {
+            delete this.userNotes.DECK_RULESET_RULE[ruleId];
+        }
+        
+        this.saveUserNotes().then(success => {
+            if (success) {
+                console.log(`✅ 规则 ${ruleId} 备注已保存`);
+                this.closeRuleNoteModal();
+                this.refreshCurrentView();
+            } else {
+                console.error(`❌ 规则 ${ruleId} 备注保存失败`);
+                alert('保存失败，请重试');
+            }
+        });
     }
     
     backToVersionSelect() {
@@ -667,6 +909,8 @@ class DeckRulesetSystem {
         document.querySelector('.version-selection-section').style.display = 'block';
         this.allRulesets = [];
         this.filteredRulesets = [];
+        this.compareMode = false;
+        this.selectedRulesets.clear();
     }
     
     async exportRulesets() {
@@ -702,6 +946,330 @@ class DeckRulesetSystem {
                 alert('导出失败: ' + error.message);
             }
         }
+    }
+    
+    // 切换对比模式
+    toggleCompareMode() {
+        this.compareMode = !this.compareMode;
+        const toggleBtn = document.getElementById('toggleCompareBtn');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const compareBtn = document.getElementById('compareRulesetsBtn');
+        const clearBtn = document.getElementById('clearSelectionBtn');
+        
+        if (this.compareMode) {
+            toggleBtn.textContent = '👁️ 退出对比模式';
+            toggleBtn.style.backgroundColor = '#e74c3c';
+            selectAllBtn.style.display = 'inline-block';
+            compareBtn.style.display = 'inline-block';
+            clearBtn.style.display = 'inline-block';
+        } else {
+            toggleBtn.textContent = '🔄 进入对比模式';
+            toggleBtn.style.backgroundColor = '';
+            selectAllBtn.style.display = 'none';
+            compareBtn.style.display = 'none';
+            clearBtn.style.display = 'none';
+            this.selectedRulesets.clear();
+        }
+        
+        this.updateSelectionCount();
+        this.displayRulesets();
+    }
+    
+    // 切换规则集选择状态
+    toggleRulesetSelection(rulesetId) {
+        if (!this.compareMode) return;
+        
+        if (this.selectedRulesets.has(rulesetId)) {
+            this.selectedRulesets.delete(rulesetId);
+        } else {
+            this.selectedRulesets.add(rulesetId);
+        }
+        
+        this.updateSelectionCount();
+        this.displayRulesets();
+    }
+    
+    // 更新选择计数
+    updateSelectionCount() {
+        const countElement = document.getElementById('selectionCount');
+        if (this.compareMode) {
+            countElement.textContent = `已选择 ${this.selectedRulesets.size} 个规则集`;
+        } else {
+            countElement.textContent = '';
+        }
+    }
+    
+    // 全选
+    selectAll() {
+        if (!this.compareMode) return;
+        
+        // 选择当前过滤后的所有规则集
+        this.filteredRulesets.forEach(ruleset => {
+            this.selectedRulesets.add(ruleset.id);
+        });
+        
+        this.updateSelectionCount();
+        this.displayRulesets();
+    }
+    
+    // 清除选择
+    clearSelection() {
+        this.selectedRulesets.clear();
+        this.updateSelectionCount();
+        this.displayRulesets();
+    }
+    
+    // 显示对比结果
+    showCompareResults() {
+        if (this.selectedRulesets.size < 2) {
+            alert('请至少选择 2 个规则集进行对比');
+            return;
+        }
+        
+        const selectedRulesetsData = Array.from(this.selectedRulesets)
+            .map(id => this.allRulesets.find(rs => rs.id === id))
+            .filter(rs => rs);
+        
+        // 同步相同规则的备注
+        this.syncNotesForIdenticalRules(selectedRulesetsData);
+        
+        // 收集所有规则类型
+        const allRuleTypes = new Set();
+        selectedRulesetsData.forEach(ruleset => {
+            ruleset.rules.forEach(rule => {
+                allRuleTypes.add(rule.ruleType);
+            });
+        });
+        
+        // 按规则类型ID排序
+        const sortedRuleTypes = Array.from(allRuleTypes).sort((a, b) => a - b);
+        
+        // 生成对比表格
+        let html = `
+            <div style="margin-bottom: 20px;">
+                <h4>对比的规则集（${selectedRulesetsData.length}个）</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    ${selectedRulesetsData.map(rs => {
+                        const note = this.userNotes.DECK_RULESET[rs.id] || '';
+                        return `<span style="background: #3498db; color: white; padding: 5px 12px; border-radius: 4px; font-size: 14px;">
+                            规则集 ${rs.id}${note ? ` (${note})` : ''}
+                        </span>`;
+                    }).join('')}
+                </div>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead>
+                        <tr style="background: #34495e; color: white;">
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd; min-width: 200px;">规则类型</th>
+                            ${selectedRulesetsData.map(rs => 
+                                `<th style="padding: 12px; text-align: center; border: 1px solid #ddd; min-width: 120px;">规则集 ${rs.id}</th>`
+                            ).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        sortedRuleTypes.forEach((ruleType, index) => {
+            const ruleTypeName = this.ruleTypes[ruleType] || `未知类型(${ruleType})`;
+            const rowColor = index % 2 === 0 ? '#f8f9fa' : 'white';
+            
+            html += `
+                <tr style="background: ${rowColor};">
+                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: 500;">
+                        ${ruleType} - ${ruleTypeName}
+                    </td>
+            `;
+            
+            selectedRulesetsData.forEach(ruleset => {
+                const rulesOfType = ruleset.rules.filter(r => r.ruleType === ruleType);
+                const count = rulesOfType.length;
+                
+                if (count > 0) {
+                    // 显示该规则类型的详细信息
+                    const details = rulesOfType.map(rule => {
+                        let info = [];
+                        if (rule.minValue !== 0 || rule.maxValue !== 0) {
+                            info.push(`范围: ${rule.minValue}-${rule.maxValue}`);
+                        }
+                        if (rule.appliesToSubsetId) {
+                            const subsetNote = this.userNotes.SUBSET[rule.appliesToSubsetId] || '';
+                            info.push(`应用于子集: ${rule.appliesToSubsetId}${subsetNote ? ' (' + subsetNote + ')' : ''}`);
+                        }
+                        if (rule.tagId) {
+                            info.push(`标签: ${window.formatGameTag ? window.formatGameTag(rule.tagId) : rule.tagId}`);
+                        }
+                        if (rule.subsets && rule.subsets.length > 0) {
+                            info.push(`关联子集: ${rule.subsets.join(', ')}`);
+                        }
+                        const ruleNote = this.userNotes.DECK_RULESET_RULE[rule.id] || '';
+                        if (ruleNote) {
+                            info.push(`📝 ${ruleNote}`);
+                        }
+                        return `<div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; font-size: 12px;">
+                            <div style="font-weight: 500; color: #2c3e50; margin-bottom: 4px;">规则 #${rule.id}</div>
+                            ${info.length > 0 ? info.map(i => `<div style="color: #6c757d;">• ${i}</div>`).join('') : ''}
+                        </div>`;
+                    }).join('');
+                    
+                    html += `
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center; background: #d4edda;">
+                            <div style="font-weight: bold; color: #155724; margin-bottom: 8px;">✓ ${count} 条规则</div>
+                            <div style="text-align: left;">${details}</div>
+                        </td>
+                    `;
+                } else {
+                    html += `
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #6c757d; background: #f8d7da;">
+                            ✗ 无
+                        </td>
+                    `;
+                }
+            });
+            
+            html += '</tr>';
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 4px;">
+                <h4 style="margin-top: 0;">📊 统计摘要</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    ${selectedRulesetsData.map(rs => {
+                        const ruleTypeCount = new Set(rs.rules.map(r => r.ruleType)).size;
+                        return `
+                            <div style="background: white; padding: 10px; border-radius: 4px;">
+                                <div style="font-weight: bold; color: #2c3e50;">规则集 ${rs.id}</div>
+                                <div style="color: #6c757d; font-size: 13px;">总规则数: ${rs.rules.length}</div>
+                                <div style="color: #6c757d; font-size: 13px;">规则类型数: ${ruleTypeCount}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('compareResults').innerHTML = html;
+        document.getElementById('compareModal').style.display = 'block';
+    }
+    
+    // 关闭对比模态框
+    closeCompareModal() {
+        document.getElementById('compareModal').style.display = 'none';
+    }
+    
+    // 同步相同规则的备注
+    syncNotesForIdenticalRules(rulesets) {
+        let syncCount = 0;
+        const syncLog = [];
+        
+        // 遍历每个规则集
+        for (let i = 0; i < rulesets.length; i++) {
+            for (let j = i + 1; j < rulesets.length; j++) {
+                const ruleset1 = rulesets[i];
+                const ruleset2 = rulesets[j];
+                
+                // 比较两个规则集中的规则
+                ruleset1.rules.forEach(rule1 => {
+                    ruleset2.rules.forEach(rule2 => {
+                        // 检查规则是否完全相同
+                        if (this.areRulesIdentical(rule1, rule2)) {
+                            const note1 = this.userNotes.DECK_RULESET_RULE[rule1.id];
+                            const note2 = this.userNotes.DECK_RULESET_RULE[rule2.id];
+                            
+                            // 如果一个有备注，另一个没有，则同步
+                            if (note1 && !note2) {
+                                this.userNotes.DECK_RULESET_RULE[rule2.id] = note1;
+                                syncCount++;
+                                syncLog.push(`规则 #${rule1.id} → 规则 #${rule2.id}: "${note1}"`);
+                            } else if (!note1 && note2) {
+                                this.userNotes.DECK_RULESET_RULE[rule1.id] = note2;
+                                syncCount++;
+                                syncLog.push(`规则 #${rule2.id} → 规则 #${rule1.id}: "${note2}"`);
+                            }
+                        }
+                    });
+                });
+            }
+        }
+        
+        // 如果有同步操作，保存并提示
+        if (syncCount > 0) {
+            this.saveUserNotes().then(success => {
+                if (success) {
+                    console.log(`✅ 同步了 ${syncCount} 条规则备注:`);
+                    syncLog.forEach(log => console.log(`  - ${log}`));
+                    
+                    // 显示同步提示
+                    const notification = document.createElement('div');
+                    notification.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #27ae60;
+                        color: white;
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                        z-index: 10000;
+                        font-size: 14px;
+                        max-width: 400px;
+                    `;
+                    notification.innerHTML = `
+                        <div style="font-weight: bold; margin-bottom: 5px;">✅ 备注同步成功</div>
+                        <div>已同步 ${syncCount} 条相同规则的备注</div>
+                    `;
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 3000);
+                } else {
+                    console.error('❌ 备注同步保存失败');
+                }
+            });
+        } else {
+            console.log('ℹ️ 没有需要同步的备注');
+        }
+    }
+    
+    // 判断两个规则是否完全相同
+    areRulesIdentical(rule1, rule2) {
+        // 如果是同一个规则，返回 false（不需要同步）
+        if (rule1.id === rule2.id) return false;
+        
+        // 比较所有关键属性
+        return (
+            rule1.ruleType === rule2.ruleType &&
+            rule1.appliesToSubsetId === rule2.appliesToSubsetId &&
+            rule1.appliesToIsNot === rule2.appliesToIsNot &&
+            rule1.ruleIsNot === rule2.ruleIsNot &&
+            rule1.minValue === rule2.minValue &&
+            rule1.maxValue === rule2.maxValue &&
+            rule1.tagId === rule2.tagId &&
+            rule1.tagMinValue === rule2.tagMinValue &&
+            rule1.tagMaxValue === rule2.tagMaxValue &&
+            rule1.stringValue === rule2.stringValue &&
+            rule1.errorString === rule2.errorString &&
+            rule1.showInvalidCards === rule2.showInvalidCards &&
+            this.arraysEqual(rule1.subsets, rule2.subsets)
+        );
+    }
+    
+    // 比较两个数组是否相等
+    arraysEqual(arr1, arr2) {
+        if (!arr1 && !arr2) return true;
+        if (!arr1 || !arr2) return false;
+        if (arr1.length !== arr2.length) return false;
+        
+        const sorted1 = [...arr1].sort();
+        const sorted2 = [...arr2].sort();
+        
+        return sorted1.every((val, index) => val === sorted2[index]);
     }
 }
 

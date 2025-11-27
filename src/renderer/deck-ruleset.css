@@ -49,6 +49,35 @@ h4 {
     margin-bottom: 30px;
 }
 
+/* 对比模式样式 */
+.compare-btn {
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.compare-btn:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.compare-btn:active {
+    transform: translateY(0);
+}
+
+.ruleset-item.selected {
+    border: 3px solid #3498db;
+    background-color: #ebf5fb;
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
 .version-container {
     background: white;
     padding: 25px;

@@ -72,6 +72,13 @@
                 <!-- 搜索 -->
                 <div class="ruleset-filters">
                     <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索规则集ID...">
+                    <div style="margin-top: 10px;">
+                        <button id="toggleCompareBtn" class="compare-btn">🔄 进入对比模式</button>
+                        <button id="selectAllBtn" class="compare-btn" style="display: none;">☑️ 全选</button>
+                        <button id="compareRulesetsBtn" class="compare-btn" style="display: none;">📊 对比选中的规则集</button>
+                        <button id="clearSelectionBtn" class="back-btn" style="display: none;">✖️ 清除选择</button>
+                        <span id="selectionCount" style="margin-left: 10px; color: #6c757d; font-size: 14px;"></span>
+                    </div>
                 </div>
                 
                 <div class="ruleset-list" id="rulesetList">
@@ -105,6 +112,38 @@
                 <div class="modal-body">
                     <div id="subsetDetails">
                         <!-- 子集详细信息将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 规则备注编辑模态框 -->
+        <div id="ruleNoteModal" class="modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3 id="modalRuleNoteTitle">编辑规则备注</h3>
+                    <button id="closeRuleNoteModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="ruleNoteInput" style="width: 100%; min-height: 100px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-family: inherit; box-sizing: border-box;" placeholder="在此输入规则备注..."></textarea>
+                    <div style="margin-top: 15px; text-align: right;">
+                        <button id="cancelRuleNoteBtn" class="back-btn" style="margin-right: 10px;">取消</button>
+                        <button id="saveRuleNoteBtn" class="view-subset-btn">💾 保存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 规则集对比模态框 -->
+        <div id="compareModal" class="modal">
+            <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h3 id="modalCompareTitle">📊 规则集对比</h3>
+                    <button id="closeCompareModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="compareResults">
+                        <!-- 对比结果将在这里显示 -->
                     </div>
                 </div>
             </div>
