@@ -13,6 +13,35 @@ if (require('electron-squirrel-startup')) {
 autoUpdater.autoDownload = false
 autoUpdater.autoInstallOnAppQuit = true
 
+// 配置更新日志
+autoUpdater.logger = require('electron-log')
+autoUpdater.logger.transports.file.level = 'info'
+
+// 检测并配置代理
+function configureProxy() {
+  const https = require('https')
+  const http = require('http')
+  
+  // 检查环境变量中的代理设置
+  const httpProxy = process.env.HTTP_PROXY || process.env.http_proxy
+  const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy
+  
+  console.log('代理检测:')
+  console.log('  HTTP_PROXY:', httpProxy || '未设置')
+  console.log('  HTTPS_PROXY:', httpsProxy || '未设置')
+  
+  // 如果没有设置代理，尝试从系统获取
+  if (!httpProxy && !httpsProxy) {
+    console.log('  未检测到代理配置，使用直连')
+    // 设置请求超时
+    http.globalAgent.timeout = 30000
+    https.globalAgent.timeout = 30000
+  }
+}
+
+// 应用启动时配置代理
+configureProxy()
+
 // 获取游戏数据目录路径（统一使用应用数据目录）
 function getGameDataPath() {
   // Windows: %APPDATA%/heathstone-client-tool/Game Data
@@ -168,6 +197,15 @@ const createMenu = () => {
 
 // 自动更新功能
 function checkForUpdates(manual = false) {
+  console.log('========== 开始检查更新 ==========')
+  console.log('当前版本:', app.getVersion())
+  console.log('更新配置:', {
+    provider: 'github',
+    owner: 'Fbigame',
+    repo: 'Zeus',
+    currentVersion: app.getVersion()
+  })
+  
   // 配置更新源 - 使用 GitHub Releases API
   autoUpdater.setFeedURL({
     provider: 'github',
@@ -180,11 +218,22 @@ function checkForUpdates(manual = false) {
 
   // 检查更新错误
   autoUpdater.on('error', (error) => {
-    console.error('更新错误:', error);
+    console.error('========== 更新错误 ==========')
+    console.error('错误类型:', error.name)
+    console.error('错误消息:', error.message)
+    console.error('错误堆栈:', error.stack)
+    console.error('================================')
+    
+    // 检查是否是网络错误
+    let errorDetail = error.message
+    if (error.message.includes('ENOTFOUND') || error.message.includes('ETIMEDOUT') || error.message.includes('ECONNREFUSED')) {
+      errorDetail = '无法连接到 GitHub，请检查网络连接或代理设置\n\n' + error.message
+    }
+    
     if (manual) {
       mainWindow.webContents.send('update-error', {
         message: '检查更新时发生错误',
-        detail: error.message
+        detail: errorDetail
       });
     }
   });
@@ -192,6 +241,7 @@ function checkForUpdates(manual = false) {
   // 检查更新
   autoUpdater.on('checking-for-update', () => {
     console.log('正在检查更新...');
+    console.log('请求 URL: https://api.github.com/repos/Fbigame/Zeus/releases')
     if (manual) {
       mainWindow.webContents.send('checking-for-update');
     }
@@ -199,7 +249,11 @@ function checkForUpdates(manual = false) {
 
   // 有可用更新
   autoUpdater.on('update-available', (info) => {
-    console.log('发现新版本:', info.version);
+    console.log('========== 发现新版本 ==========')
+    console.log('新版本:', info.version)
+    console.log('发布日期:', info.releaseDate)
+    console.log('下载地址:', info.files)
+    console.log('================================')
     mainWindow.webContents.send('update-available', {
       version: info.version,
       releaseNotes: info.releaseNotes,
@@ -208,8 +262,11 @@ function checkForUpdates(manual = false) {
   });
 
   // 没有可用更新
-  autoUpdater.on('update-not-available', () => {
-    console.log('当前已是最新版本');
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('========== 已是最新版本 ==========')
+    console.log('当前版本:', app.getVersion())
+    console.log('最新版本:', info?.version || '未知')
+    console.log('================================')
     if (manual) {
       mainWindow.webContents.send('update-not-available');
     }
@@ -217,6 +274,7 @@ function checkForUpdates(manual = false) {
   
   // 下载进度
   autoUpdater.on('download-progress', (progressObj) => {
+    console.log(`下载进度: ${Math.round(progressObj.percent)}% (${(progressObj.transferred / 1024 / 1024).toFixed(2)}MB / ${(progressObj.total / 1024 / 1024).toFixed(2)}MB)`);
     mainWindow.webContents.send('download-progress', {
       percent: progressObj.percent,
       transferred: progressObj.transferred,
@@ -225,17 +283,34 @@ function checkForUpdates(manual = false) {
   });
 
   // 更新下载完成
-  autoUpdater.on('update-downloaded', () => {
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('========== 更新下载完成 ==========')
+    console.log('版本:', info.version)
+    console.log('文件:', info.files)
+    console.log('================================')
     mainWindow.webContents.send('update-downloaded');
   });
 
   // 开始检查更新
+  console.log('发起更新检查请求...')
   autoUpdater.checkForUpdates().catch(err => {
-    console.error('检查更新失败:', err);
+    console.error('========== 检查更新失败 ==========')
+    console.error('错误:', err)
+    console.error('错误消息:', err.message)
+    console.error('错误代码:', err.code)
+    console.error('================================')
+    
+    let errorDetail = err.message
+    if (err.code === 'ENOTFOUND' || err.message.includes('getaddrinfo')) {
+      errorDetail = '无法解析 GitHub 域名，请检查：\n1. 网络连接是否正常\n2. DNS 设置是否正确\n3. 是否需要配置代理\n\n原始错误: ' + err.message
+    } else if (err.code === 'ETIMEDOUT' || err.code === 'ECONNREFUSED') {
+      errorDetail = '连接 GitHub 超时，请检查：\n1. 是否可以访问 github.com\n2. 防火墙设置\n3. 代理配置\n\n原始错误: ' + err.message
+    }
+    
     if (manual) {
       mainWindow.webContents.send('update-error', {
         message: '检查更新失败',
-        detail: err.message
+        detail: errorDetail
       });
     }
   });
