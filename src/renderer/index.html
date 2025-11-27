@@ -436,6 +436,68 @@
             color: #7f8c8d;
         }
 
+        /* 功能选择样式 */
+        .feature-selection-section {
+            margin-bottom: 30px;
+        }
+
+        .feature-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .feature-btn {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 40px 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .feature-btn:hover {
+            border-color: #3498db;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+        }
+
+        .feature-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .feature-desc {
+            font-size: 0.95em;
+            color: #7f8c8d;
+            line-height: 1.5;
+        }
+
+        .back-to-menu-btn {
+            padding: 8px 16px;
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .back-to-menu-btn:hover {
+            background-color: #7f8c8d;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -497,10 +559,30 @@
 </head>
 <body>
     <div class="container">
-        <h1>🃏 炉石传说版本对比</h1>
+        <h1>🃏 炉石传说数据工具</h1>
+
+        <!-- 功能选择区域 -->
+        <section id="featureSelectionSection" class="feature-selection-section">
+            <div class="version-container">
+                <h2>🎯 请选择功能</h2>
+                <div class="feature-buttons">
+                    <button id="selectCompareBtn" class="feature-btn">
+                        <div class="feature-icon">🔍</div>
+                        <div class="feature-title">版本对比</div>
+                        <div class="feature-desc">对比不同版本间的卡牌变化</div>
+                    </button>
+                    <button id="selectDeckBtn" class="feature-btn">
+                        <div class="feature-icon">🃏</div>
+                        <div class="feature-title">套牌模板</div>
+                        <div class="feature-desc">查看和管理套牌模板数据</div>
+                    </button>
+                </div>
+            </div>
+        </section>
 
         <!-- 版本选择区域 -->
-        <section class="version-selection-section">
+        <section class="version-selection-section" style="display: none;">
+            <button id="backToMenuBtn" class="back-to-menu-btn">← 返回功能选择</button>
             <div class="version-container">
                 <h2>📂 版本选择</h2>
                 <div id="versionDetection" class="version-detection">
@@ -611,6 +693,22 @@
         </div>
     </div>
 
+    <script>
+        // 功能选择逻辑
+        document.getElementById('selectCompareBtn').addEventListener('click', () => {
+            document.getElementById('featureSelectionSection').style.display = 'none';
+            document.querySelector('.version-selection-section').style.display = 'block';
+        });
+
+        document.getElementById('selectDeckBtn').addEventListener('click', () => {
+            window.location.href = 'deck-template.html';
+        });
+
+        document.getElementById('backToMenuBtn').addEventListener('click', () => {
+            document.querySelector('.version-selection-section').style.display = 'none';
+            document.getElementById('featureSelectionSection').style.display = 'block';
+        });
+    </script>
     <script src="version-compare.js"></script>
 </body>
 </html>

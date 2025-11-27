@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <title>炉石传说套牌模板</title>
+    <link rel="stylesheet" href="deck-template.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🃏 炉石传说套牌模板</h1>
+
+        <!-- 版本选择区域 -->
+        <section class="version-selection-section">
+            <button id="backToIndexBtn" class="back-to-menu-btn">← 返回首页</button>
+            <div class="version-container">
+                <h2>📂 版本选择</h2>
+                <div id="versionDetection" class="version-detection">
+                    <div class="detection-status">
+                        <span id="detectionStatus">正在检测版本文件夹...</span>
+                    </div>
+                    <div class="detection-info" id="dataPathInfo" style="margin-top: 8px; font-size: 11px; color: #6c757d;"></div>
+                </div>
+                
+                <div id="versionSelector" class="version-selector" style="display: none;">
+                    <div class="version-single">
+                        <div class="version-item">
+                            <h3>📦 选择版本</h3>
+                            <select id="versionSelect" class="version-select">
+                                <option value="">请选择版本</option>
+                            </select>
+                            <div class="version-info" id="versionInfo"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="load-controls">
+                        <button id="loadDecksBtn" class="load-btn" disabled>📥 加载套牌</button>
+                        <button id="refreshVersionsBtn" class="refresh-btn">🔄 刷新版本</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 加载进度区域 -->
+        <section id="loadProgressSection" class="load-progress-section" style="display: none;">
+            <div class="progress-container">
+                <h2>⚙️ 正在加载</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">准备开始加载...</div>
+            </div>
+        </section>
+
+        <!-- 套牌列表区域 -->
+        <section id="deckListSection" class="deck-list-section" style="display: none;">
+            <div class="deck-container">
+                <div class="deck-header">
+                    <div class="deck-header-top">
+                        <h2>📋 套牌列表</h2>
+                        <div>
+                            <button id="backToVersionBtn" class="back-btn">← 返回选择</button>
+                            <button id="exportDecksBtn" class="export-btn">💾 导出套牌</button>
+                        </div>
+                    </div>
+                    <div class="deck-summary" id="deckSummary">
+                        <!-- 套牌统计信息 -->
+                    </div>
+                </div>
+
+                <!-- 过滤和搜索 -->
+                <div class="deck-filters">
+                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索套牌名称...">
+                    <select id="classFilter" class="filter-select">
+                        <option value="">所有职业</option>
+                    </select>
+                    <select id="formatFilter" class="filter-select">
+                        <option value="">所有模式</option>
+                        <option value="standard">标准模式</option>
+                        <option value="wild">狂野模式</option>
+                    </select>
+                </div>
+                
+                <div class="deck-list" id="deckList">
+                    <!-- 套牌列表将在这里显示 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 套牌详情模态框 -->
+        <div id="deckModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalDeckName">套牌详情</h3>
+                    <button id="closeModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="deckDetails">
+                        <!-- 套牌详细信息将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="deck-template.js"></script>
+</body>
+</html>

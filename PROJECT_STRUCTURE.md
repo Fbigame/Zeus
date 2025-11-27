@@ -6,10 +6,13 @@ zeus/
 │   ├── main/                      # 主进程代码
 │   │   └── main.js               # Electron 主进程入口
 │   ├── renderer/                  # 渲染进程代码
-│   │   ├── index.html            # 主页面
+│   │   ├── index.html            # 主页面（功能选择）
 │   │   ├── version-compare.html  # 版本对比页面
 │   │   ├── version-compare.js    # 版本对比逻辑
-│   │   └── version-compare.css   # 样式文件
+│   │   ├── version-compare.css   # 版本对比样式
+│   │   ├── deck-template.html    # 套牌模板页面
+│   │   ├── deck-template.js      # 套牌模板逻辑
+│   │   └── deck-template.css     # 套牌模板样式
 │   └── preload/                  # 预加载脚本
 │       └── preload.js           # 安全的API暴露
 ├── assets/                       # 静态资源
@@ -46,7 +49,25 @@ zeus/
 
 ### data/ - 数据文件
 
-存放版本对比的数据文件，该目录被Git忽略以避免大文件提交
+存放版本对比和套牌模板的数据文件，该目录被Git忽略以避免大文件提交
+
+每个版本文件夹应包含：
+- 版本对比功能：`CARD.json`, `CARD_TAG.json`
+- 套牌模板功能：`DECK_TEMPLATE.json`, `DECK.json`, `DECK_CARD.json`
+
+## 功能模块
+
+### 1. 版本对比
+- 比较不同版本间的卡牌变化
+- 显示新增、修改、删除的卡牌
+- 支持详细的属性变化对比
+- 可导出对比结果
+
+### 2. 套牌模板
+- 查看游戏内置套牌模板
+- 显示套牌的完整卡牌列表
+- 支持按职业和名称过滤
+- 可导出套牌数据
 
 ## 优势
 
