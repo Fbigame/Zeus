@@ -88,22 +88,11 @@ const createWindow = () => {
     const dataCheck = await checkGameDataDirectory()
     
     if (!dataCheck.hasData) {
-      // 数据目录为空，显示引导提示
-      const result = await dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: '欢迎使用 Hearthstone Client Tool',
-        message: '游戏数据目录为空',
-        detail: `请将游戏数据文件放置到以下目录：\n\n${dataCheck.path}\n\n数据格式：\n└─ Game Data/\n   ├─ 34.0.2.231191/\n   │  ├─ CARD.json\n   │  ├─ ACHIEVEMENT.json\n   │  └─ ...\n   └─ 34.0.0.229984/\n      └─ ...\n\n点击「打开目录」可以直接打开数据文件夹。`,
-        buttons: ['打开目录', '稍后设置'],
-        defaultId: 0,
-        cancelId: 1
-      })
-      
-      if (result.response === 0) {
-        // 打开游戏数据目录
-        const { shell } = require('electron')
-        shell.openPath(dataCheck.path)
-      }
+      // 数据目录为空，发送通知到渲染进程
+      mainWindow.webContents.send('show-data-directory-guide', {
+        path: dataCheck.path,
+        isEmpty: true
+      });
     }
     
     // 检查更新（仅在生产环境）
@@ -179,22 +168,21 @@ const createMenu = () => {
 
 // 自动更新功能
 function checkForUpdates(manual = false) {
-  // 配置更新源
+  // 配置更新源 - 使用 GitHub Releases API
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'Fbigame',
-    repo: 'Zeus',
-    // 使用 latest release，避免 latest.yml 404 错误
-    releaseType: 'release'
+    repo: 'Zeus'
   });
+  
+  // 禁用自动下载，手动控制
+  autoUpdater.autoDownload = false;
 
   // 检查更新错误
   autoUpdater.on('error', (error) => {
     console.error('更新错误:', error);
     if (manual) {
-      dialog.showMessageBox(mainWindow, {
-        type: 'error',
-        title: '更新失败',
+      mainWindow.webContents.send('update-error', {
         message: '检查更新时发生错误',
         detail: error.message
       });
@@ -205,29 +193,17 @@ function checkForUpdates(manual = false) {
   autoUpdater.on('checking-for-update', () => {
     console.log('正在检查更新...');
     if (manual) {
-      dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: '检查更新',
-        message: '正在检查更新...'
-      });
+      mainWindow.webContents.send('checking-for-update');
     }
   });
 
   // 有可用更新
   autoUpdater.on('update-available', (info) => {
     console.log('发现新版本:', info.version);
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: '发现新版本',
-      message: `发现新版本 ${info.version}`,
-      detail: '是否现在下载？',
-      buttons: ['下载', '稍后'],
-      defaultId: 0,
-      cancelId: 1
-    }).then(result => {
-      if (result.response === 0) {
-        autoUpdater.downloadUpdate();
-      }
+    mainWindow.webContents.send('update-available', {
+      version: info.version,
+      releaseNotes: info.releaseNotes,
+      releaseDate: info.releaseDate
     });
   });
 
@@ -235,34 +211,33 @@ function checkForUpdates(manual = false) {
   autoUpdater.on('update-not-available', () => {
     console.log('当前已是最新版本');
     if (manual) {
-      dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: '已是最新版本',
-        message: '当前已是最新版本'
-      });
+      mainWindow.webContents.send('update-not-available');
     }
+  });
+  
+  // 下载进度
+  autoUpdater.on('download-progress', (progressObj) => {
+    mainWindow.webContents.send('download-progress', {
+      percent: progressObj.percent,
+      transferred: progressObj.transferred,
+      total: progressObj.total
+    });
   });
 
   // 更新下载完成
   autoUpdater.on('update-downloaded', () => {
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: '更新下载完成',
-      message: '更新已下载完成',
-      detail: '应用将在退出后自动安装更新',
-      buttons: ['立即重启', '稍后'],
-      defaultId: 0,
-      cancelId: 1
-    }).then(result => {
-      if (result.response === 0) {
-        autoUpdater.quitAndInstall();
-      }
-    });
+    mainWindow.webContents.send('update-downloaded');
   });
 
   // 开始检查更新
   autoUpdater.checkForUpdates().catch(err => {
     console.error('检查更新失败:', err);
+    if (manual) {
+      mainWindow.webContents.send('update-error', {
+        message: '检查更新失败',
+        detail: err.message
+      });
+    }
   });
 }
 
@@ -289,6 +264,36 @@ ipcMain.handle('open-game-data-directory', async () => {
     return { success: true }
   } catch (error) {
     console.error('打开游戏数据目录失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// IPC 处理器 - 检查更新
+ipcMain.handle('check-for-updates', async () => {
+  try {
+    checkForUpdates(true)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+})
+
+// IPC 处理器 - 下载更新
+ipcMain.handle('download-update', async () => {
+  try {
+    autoUpdater.downloadUpdate()
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+})
+
+// IPC 处理器 - 安装更新
+ipcMain.handle('install-update', async () => {
+  try {
+    autoUpdater.quitAndInstall()
+    return { success: true }
+  } catch (error) {
     return { success: false, error: error.message }
   }
 })

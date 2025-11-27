@@ -541,6 +541,131 @@
             color: #e74c3c;
         }
 
+        /* 自定义通知样式 */
+        .custom-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            padding: 20px;
+            max-width: 400px;
+            z-index: 10000;
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .notification-title {
+            font-weight: bold;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #7f8c8d;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            line-height: 20px;
+        }
+
+        .notification-close:hover {
+            color: #e74c3c;
+        }
+
+        .notification-body {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .notification-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .notification-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .notification-btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .notification-btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .notification-btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .notification-btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .notification-success {
+            border-left: 4px solid #27ae60;
+        }
+
+        .notification-error {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .notification-info {
+            border-left: 4px solid #3498db;
+        }
+
+        .notification-warning {
+            border-left: 4px solid #f39c12;
+        }
+
+        .progress-container {
+            margin-top: 10px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
         @media (max-width: 768px) {
             .version-pair {
                 grid-template-columns: 1fr;
@@ -557,6 +682,12 @@
             
             .export-controls {
                 flex-direction: column;
+            }
+
+            .custom-notification {
+                right: 10px;
+                left: 10px;
+                max-width: none;
             }
         }
     </style>
@@ -606,6 +737,153 @@
     </div>
 
     <script>
+        // 自定义通知函数
+        function showNotification(title, message, type = 'info', buttons = []) {
+            // 移除已存在的通知
+            const existing = document.querySelector('.custom-notification');
+            if (existing) {
+                existing.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.className = `custom-notification notification-${type}`;
+            
+            let buttonsHTML = '';
+            if (buttons.length > 0) {
+                buttonsHTML = '<div class="notification-buttons">';
+                buttons.forEach((btn, index) => {
+                    const btnClass = index === 0 ? 'notification-btn-primary' : 'notification-btn-secondary';
+                    buttonsHTML += `<button class="notification-btn ${btnClass}" data-action="${btn.action}">${btn.text}</button>`;
+                });
+                buttonsHTML += '</div>';
+            }
+
+            notification.innerHTML = `
+                <div class="notification-header">
+                    <div class="notification-title">${title}</div>
+                    <button class="notification-close">×</button>
+                </div>
+                <div class="notification-body">${message}</div>
+                ${buttonsHTML}
+            `;
+
+            document.body.appendChild(notification);
+
+            // 关闭按钮
+            notification.querySelector('.notification-close').addEventListener('click', () => {
+                notification.remove();
+            });
+
+            // 按钮事件
+            if (buttons.length > 0) {
+                notification.querySelectorAll('.notification-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const action = btn.dataset.action;
+                        if (action === 'openDataDir') {
+                            window.fileAPI.openGameDataDirectory();
+                        } else if (action === 'downloadUpdate') {
+                            window.updateAPI.downloadUpdate();
+                            showNotification('下载中', '正在下载更新...', 'info');
+                        } else if (action === 'installUpdate') {
+                            window.updateAPI.installUpdate();
+                        }
+                        notification.remove();
+                    });
+                });
+            }
+
+            // 自动关闭（仅无按钮时）
+            if (buttons.length === 0) {
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+        }
+
+        // 监听数据目录引导
+        if (window.updateAPI) {
+            window.updateAPI.onShowDataDirectoryGuide((data) => {
+                const message = `欢迎使用 Hearthstone Client Tool！<br><br>
+                    检测到游戏数据目录为空，请将游戏数据文件放置到以下目录：<br>
+                    <code style="display:block;background:#f5f5f5;padding:8px;margin:8px 0;border-radius:4px;font-size:12px;">${data.path}</code>
+                    <small style="color:#7f8c8d;">数据格式：Game Data/34.0.2.231191/CARD.json 等文件</small>`;
+                
+                showNotification(
+                    '📁 设置游戏数据目录',
+                    message,
+                    'warning',
+                    [
+                        { text: '打开目录', action: 'openDataDir' },
+                        { text: '稍后设置', action: 'close' }
+                    ]
+                );
+            });
+
+            // 监听更新事件
+            window.updateAPI.onCheckingForUpdate(() => {
+                console.log('正在检查更新...');
+            });
+
+            window.updateAPI.onUpdateAvailable((info) => {
+                showNotification(
+                    '🎉 发现新版本',
+                    `发现新版本 ${info.version}，是否现在下载？`,
+                    'success',
+                    [
+                        { text: '立即下载', action: 'downloadUpdate' },
+                        { text: '稍后', action: 'close' }
+                    ]
+                );
+            });
+
+            window.updateAPI.onUpdateNotAvailable(() => {
+                showNotification('✓ 已是最新版本', '当前已是最新版本', 'success');
+            });
+
+            window.updateAPI.onDownloadProgress((progress) => {
+                const percent = Math.round(progress.percent);
+                // 更新现有通知中的进度条
+                let notification = document.querySelector('.custom-notification');
+                if (!notification || !notification.querySelector('.progress-container')) {
+                    // 创建下载进度通知
+                    showNotification(
+                        '下载更新中',
+                        `<div class="progress-container"><div class="progress-bar" id="updateProgress"></div></div>
+                        <div style="margin-top:8px;font-size:12px;color:#7f8c8d;">已下载：${(progress.transferred / 1024 / 1024).toFixed(2)} MB / ${(progress.total / 1024 / 1024).toFixed(2)} MB</div>`,
+                        'info'
+                    );
+                    notification = document.querySelector('.custom-notification');
+                }
+                
+                const progressBar = notification?.querySelector('#updateProgress');
+                if (progressBar) {
+                    progressBar.style.width = percent + '%';
+                }
+            });
+
+            window.updateAPI.onUpdateDownloaded(() => {
+                showNotification(
+                    '✓ 更新下载完成',
+                    '更新已下载完成，是否立即重启安装？',
+                    'success',
+                    [
+                        { text: '立即重启', action: 'installUpdate' },
+                        { text: '稍后重启', action: 'close' }
+                    ]
+                );
+            });
+
+            window.updateAPI.onUpdateError((error) => {
+                showNotification(
+                    '✗ 更新失败',
+                    `检查更新时发生错误：${error.message || error.detail}`,
+                    'error'
+                );
+            });
+        }
+        
         // 页面加载时获取并显示数据目录路径
         document.addEventListener('DOMContentLoaded', async () => {
             try {
