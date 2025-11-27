@@ -127,7 +127,7 @@ class DeckRulesetSystem {
     // 加载用户备注
     async loadUserNotes() {
         try {
-            const result = await window.fileAPI.readFile('data/user-notes.json');
+            const result = await window.fileAPI.readFile('userdata/user-notes.json');
             if (result.success) {
                 this.userNotes = JSON.parse(result.data);
                 console.log('✅ 用户备注加载成功');
@@ -145,7 +145,7 @@ class DeckRulesetSystem {
     async saveUserNotes() {
         try {
             const data = JSON.stringify(this.userNotes, null, 2);
-            const result = await window.fileAPI.writeFile('data/user-notes.json', data);
+            const result = await window.fileAPI.writeFile('userdata/user-notes.json', data);
             if (result.success) {
                 console.log('✅ 用户备注保存成功');
                 return true;

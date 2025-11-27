@@ -18,6 +18,15 @@ function getDataPath() {
   }
 }
 
+// 获取用户数据目录路径（用于存储用户配置和备注）
+function getUserDataPath() {
+  // 使用 Electron 的 userData 目录
+  // Windows: %APPDATA%/heathstone-client-tool
+  // macOS: ~/Library/Application Support/heathstone-client-tool
+  // Linux: ~/.config/heathstone-client-tool
+  return app.getPath('userData')
+}
+
 // 禁用 GPU 相关功能来避免性能问题
 app.commandLine.appendSwitch('--disable-features', 'VizDisplayCompositor');
 app.commandLine.appendSwitch('--disable-dev-shm-usage');
@@ -206,6 +215,19 @@ ipcMain.handle('get-default-data-path', async () => {
   }
 })
 
+// IPC 处理器 - 获取用户数据路径
+ipcMain.handle('get-user-data-path', async () => {
+  try {
+    const userDataPath = getUserDataPath()
+    // 确保用户数据目录存在
+    await fs.mkdir(userDataPath, { recursive: true })
+    return { success: true, path: userDataPath }
+  } catch (error) {
+    console.error('获取用户数据路径失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
 ipcMain.handle('scan-directories', async (event, dirPath) => {
   try {
     const fullPath = path.resolve(dirPath);
@@ -257,10 +279,15 @@ ipcMain.handle('read-file', async (event, filePath) => {
   try {
     let actualPath = filePath;
     
-    // 如果是相对路径且以data开头，转换为绝对路径
-    if (filePath.startsWith('./data/') || filePath.startsWith('data/')) {
+    // 处理 userdata 路径（用户数据）
+    if (filePath.startsWith('./userdata/') || filePath.startsWith('userdata/')) {
+      const userDataPath = getUserDataPath();
+      const relativePath = filePath.replace(/^\.?\/userdata\//, '').replace(/^userdata\//, '');
+      actualPath = path.join(userDataPath, relativePath);
+    }
+    // 处理 data 路径（游戏数据）
+    else if (filePath.startsWith('./data/') || filePath.startsWith('data/')) {
       const dataPath = getDataPath();
-      // 移除路径开头的 data/ 部分，因为 dataPath 已经指向 data 目录
       const relativePath = filePath.replace(/^\.?\/data\//, '').replace(/^data\//, '');
       actualPath = path.join(dataPath, relativePath);
     }
@@ -276,7 +303,24 @@ ipcMain.handle('read-file', async (event, filePath) => {
 
 ipcMain.handle('write-file', async (event, filePath, data) => {
   try {
-    await fs.writeFile(filePath, data, 'utf8');
+    let actualPath = filePath;
+    
+    // 处理 userdata 路径（用户数据）
+    if (filePath.startsWith('./userdata/') || filePath.startsWith('userdata/')) {
+      const userDataPath = getUserDataPath();
+      const relativePath = filePath.replace(/^\.?\/userdata\//, '').replace(/^userdata\//, '');
+      actualPath = path.join(userDataPath, relativePath);
+      // 确保目录存在
+      await fs.mkdir(path.dirname(actualPath), { recursive: true });
+    }
+    // 处理 data 路径（游戏数据）
+    else if (filePath.startsWith('./data/') || filePath.startsWith('data/')) {
+      const dataPath = getDataPath();
+      const relativePath = filePath.replace(/^\.?\/data\//, '').replace(/^data\//, '');
+      actualPath = path.join(dataPath, relativePath);
+    }
+    
+    await fs.writeFile(actualPath, data, 'utf8');
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
