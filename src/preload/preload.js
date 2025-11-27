@@ -10,8 +10,12 @@ contextBridge.exposeInMainWorld('fileAPI', {
   scanDirectories: (dirPath) => ipcRenderer.invoke('scan-directories', dirPath),
   scanFiles: (dirPath, extension) => ipcRenderer.invoke('scan-files', dirPath, extension),
   
-  // 获取默认数据路径
+  // 获取路径
   getDefaultDataPath: () => ipcRenderer.invoke('get-default-data-path'),
+  getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
+  
+  // 打开游戏数据目录
+  openGameDataDirectory: () => ipcRenderer.invoke('open-game-data-directory'),
   
   // 文件对话框
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),

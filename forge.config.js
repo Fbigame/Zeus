@@ -1,24 +1,12 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 const path = require('path');
-const fs = require('fs');
-
-// 检查 data 目录是否存在
-const dataPath = path.join(__dirname, 'data');
-const hasDataDir = fs.existsSync(dataPath);
 
 module.exports = {
   packagerConfig: {
     asar: true,
-    // 仅在 data 目录存在时包含它
-    extraResource: hasDataDir ? ['data'] : [],
     // 应用图标配置 - 使用相对路径（打包时会正确处理）
-    icon: './assets/icon',
-    // 排除data目录不被复制到app.asar中
-    ignore: [
-      /^\/data$/,
-      /^\/data\//
-    ]
+    icon: './assets/icon'
   },
   rebuildConfig: {},
   makers: [
