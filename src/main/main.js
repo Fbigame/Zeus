@@ -51,7 +51,7 @@ const createWindow = () => {
     icon: path.join(__dirname, '..', '..', 'assets', 'icon.ico'),
     titleBarStyle: 'default',
     show: false,
-    title: '版本对比工具'
+    title: 'Hearthstone Client Tool'
   })
 
   // 窗口准备好后最大化显示
@@ -101,9 +101,9 @@ const createMenu = () => {
           click: () => {
             dialog.showMessageBox(mainWindow, {
               type: 'info',
-              title: '关于版本对比工具',
-              message: '版本对比工具',
-              detail: `一个基于 Electron 的版本对比工具\n版本: ${app.getVersion()}\n\n功能：\n• 版本对比\n• 差异分析\n• 结果导出`
+              title: '关于 Hearthstone Client Tool',
+              message: 'Hearthstone Client Tool',
+              detail: `炉石传说客户端数据分析工具\n版本: ${app.getVersion()}\n\n功能特性：\n• 版本对比 - 智能识别游戏数据差异\n• 数据查看器 - 浏览卡牌、成就等数据\n• 规则集分析 - 套牌规则详细解析\n• 自动更新 - 保持应用最新状态\n\n作者: Fbigame\n许可证: ISC`
             })
           }
         }

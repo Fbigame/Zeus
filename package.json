@@ -1,6 +1,7 @@
 {
   "name": "heathstone-client-tool",
-  "version": "1.0.1",
+  "productName": "Hearthstone Client Tool",
+  "version": "1.0.2",
   "main": "src/main/main.js",
   "repository": {
     "type": "git",
@@ -18,7 +19,7 @@
   },
   "author": "Fbigame",
   "license": "ISC",
-  "description": "版本对比工具 - 一个基于 Electron 的版本数据对比分析工具",
+  "description": "炉石传说客户端数据分析工具 - 提供版本对比、数据查看、套牌规则集分析等功能",
   "devDependencies": {
     "@electron-forge/cli": "^7.10.2",
     "@electron-forge/maker-deb": "^7.10.2",
