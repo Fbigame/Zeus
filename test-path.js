@@ -3,7 +3,7 @@ const path = require('path');
 
 // 模拟 getDataPath 函数
 function getDataPath() {
-  return path.join(__dirname, 'out', 'hearthstone-version-compare-win32-x64', 'resources', 'data');
+  return path.join(__dirname, 'out', 'heathstone-client-tool-win32-x64', 'resources', 'data');
 }
 
 // 模拟前端传入的路径

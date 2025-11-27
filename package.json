@@ -1,5 +1,5 @@
 {
-  "name": "hearthstone-version-compare",
+  "name": "heathstone-client-tool",
   "version": "1.0.0",
   "main": "src/main/main.js",
   "scripts": {

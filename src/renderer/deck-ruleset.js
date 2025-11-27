@@ -1089,6 +1089,16 @@ class DeckRulesetSystem {
                 if (count > 0) {
                     // 显示该规则类型的详细信息
                     const details = rulesOfType.map(rule => {
+                        const ruleNote = this.userNotes.DECK_RULESET_RULE[rule.id] || '';
+                        
+                        // 如果有备注，只显示备注
+                        if (ruleNote) {
+                            return `<div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; font-size: 12px;">
+                                <div style="color: #27ae60; font-weight: 500;">📝 ${ruleNote}</div>
+                            </div>`;
+                        }
+                        
+                        // 没有备注时显示详细信息
                         let info = [];
                         if (rule.minValue !== 0 || rule.maxValue !== 0) {
                             info.push(`范围: ${rule.minValue}-${rule.maxValue}`);
@@ -1102,10 +1112,6 @@ class DeckRulesetSystem {
                         }
                         if (rule.subsets && rule.subsets.length > 0) {
                             info.push(`关联子集: ${rule.subsets.join(', ')}`);
-                        }
-                        const ruleNote = this.userNotes.DECK_RULESET_RULE[rule.id] || '';
-                        if (ruleNote) {
-                            info.push(`📝 ${ruleNote}`);
                         }
                         return `<div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; font-size: 12px;">
                             <div style="font-weight: 500; color: #2c3e50; margin-bottom: 4px;">规则 #${rule.id}</div>
@@ -1181,15 +1187,15 @@ class DeckRulesetSystem {
                             const note1 = this.userNotes.DECK_RULESET_RULE[rule1.id];
                             const note2 = this.userNotes.DECK_RULESET_RULE[rule2.id];
                             
-                            // 如果一个有备注，另一个没有，则同步
-                            if (note1 && !note2) {
+                            // 如果前面有备注，后面没有或不同，则同步（以前面为准）
+                            if (note1 && note1 !== note2) {
                                 this.userNotes.DECK_RULESET_RULE[rule2.id] = note1;
                                 syncCount++;
-                                syncLog.push(`规则 #${rule1.id} → 规则 #${rule2.id}: "${note1}"`);
-                            } else if (!note1 && note2) {
-                                this.userNotes.DECK_RULESET_RULE[rule1.id] = note2;
-                                syncCount++;
-                                syncLog.push(`规则 #${rule2.id} → 规则 #${rule1.id}: "${note2}"`);
+                                if (note2) {
+                                    syncLog.push(`规则 #${rule1.id} → 规则 #${rule2.id}: "${note1}" (覆盖原备注: "${note2}")`);
+                                } else {
+                                    syncLog.push(`规则 #${rule1.id} → 规则 #${rule2.id}: "${note1}"`);
+                                }
                             }
                         }
                     });
