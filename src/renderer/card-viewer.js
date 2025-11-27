@@ -263,30 +263,23 @@ class CardViewer {
                         const cardSetId = timing.m_cardSetId || timing.cardSetId;
                         
                         const card = this.allCards.find(c => c.id === cardId);
-                        if (card && eventTimingEvent !== undefined) {
-                            // 事件203特殊处理：显示cardSetId而不是事件名
-                            if (eventTimingEvent === 203) {
-                                const cardSetInfo = window.getTagValue(183, cardSetId);
-                                const event203Name = eventMap[203] || '标准';
-                                card.cardSets.push({
-                                    eventTimingEvent: eventTimingEvent,
-                                    eventName: `${cardSetInfo.displayName} (${event203Name})`,
-                                    cardSetId: cardSetId,
-                                    isCardSetBased: true  // 标记这是基于cardSetId的
-                                });
-                            } else {
-                                const eventName = eventMap[eventTimingEvent] || `事件${eventTimingEvent}`;
-                                // 如果找不到映射，记录日志
-                                if (!eventMap[eventTimingEvent]) {
-                                    console.warn(`未找到事件映射: eventTimingEvent=${eventTimingEvent}, cardId=${cardId}`);
-                                }
-                                card.cardSets.push({
-                                    eventTimingEvent: eventTimingEvent,
-                                    eventName: eventName,
-                                    cardSetId: cardSetId,
-                                    isCardSetBased: false
-                                });
+                        if (card && eventTimingEvent !== undefined && cardSetId !== undefined) {
+                            // 所有事件都显示 cardSetId 对应的扩展包名称
+                            const cardSetInfo = window.getTagValue(183, cardSetId);
+                            const eventName = eventMap[eventTimingEvent] || `事件${eventTimingEvent}`;
+                            
+                            // 如果找不到映射，记录日志
+                            if (!eventMap[eventTimingEvent]) {
+                                console.warn(`未找到事件映射: eventTimingEvent=${eventTimingEvent}, cardId=${cardId}`);
                             }
+                            
+                            // 格式：扩展包名称 (事件名)
+                            card.cardSets.push({
+                                eventTimingEvent: eventTimingEvent,
+                                eventName: `${cardSetInfo.displayName} (${eventName})`,
+                                cardSetId: cardSetId,
+                                isCardSetBased: true  // 都是基于cardSetId的
+                            });
                         }
                     });
                 }
