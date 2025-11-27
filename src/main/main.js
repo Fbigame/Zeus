@@ -117,6 +117,37 @@ ipcMain.handle('scan-directories', async (event, dirPath) => {
   }
 });
 
+ipcMain.handle('scan-files', async (event, dirPath, extension) => {
+  try {
+    let fullPath;
+    
+    // 如果是相对路径且以data开头，转换为绝对路径
+    if (dirPath.startsWith('./data/') || dirPath.startsWith('data/')) {
+      const dataPath = getDataPath();
+      const relativePath = dirPath.replace(/^\.?\/data\//, '').replace(/^data\//, '');
+      fullPath = path.join(dataPath, relativePath);
+    } else {
+      fullPath = path.resolve(dirPath);
+    }
+    
+    const entries = await fs.readdir(fullPath, { withFileTypes: true });
+    let files = entries
+      .filter(entry => entry.isFile())
+      .map(entry => entry.name);
+    
+    // 如果指定了扩展名，进行过滤
+    if (extension) {
+      files = files.filter(file => file.endsWith(extension));
+    }
+    
+    console.log(`扫描文件: ${fullPath}, 找到 ${files.length} 个文件`);
+    return { success: true, files };
+  } catch (error) {
+    console.error('扫描文件失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // IPC 处理器 - 文件操作
 ipcMain.handle('read-file', async (event, filePath) => {
   try {

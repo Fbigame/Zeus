@@ -593,125 +593,12 @@
                 </div>
             </div>
         </section>
-
-        <!-- 版本选择区域 -->
-        <section class="version-selection-section" style="display: none;">
-            <button id="backToMenuBtn" class="back-to-menu-btn">← 返回功能选择</button>
-            <div class="version-container">
-                <h2>📂 版本选择</h2>
-                <div id="versionDetection" class="version-detection">
-                    <div class="detection-status">
-                        <span id="detectionStatus">正在检测版本文件夹...</span>
-                    </div>
-                    <div class="detection-info" id="dataPathInfo" style="margin-top: 8px; font-size: 11px; color: #6c757d;"></div>
-                </div>
-                
-                <div id="versionSelector" class="version-selector" style="display: none;">
-                    <div class="version-pair">
-                        <div class="version-item">
-                            <h3>📦 旧版本</h3>
-                            <select id="oldVersionSelect" class="version-select">
-                                <option value="">请选择旧版本</option>
-                            </select>
-                            <div class="version-info" id="oldVersionInfo"></div>
-                        </div>
-                        
-                        <div class="version-item">
-                            <h3>🆕 新版本</h3>
-                            <select id="newVersionSelect" class="version-select">
-                                <option value="">请选择新版本</option>
-                            </select>
-                            <div class="version-info" id="newVersionInfo"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="compare-controls">
-                        <button id="startCompareBtn" class="compare-btn" disabled>🔍 开始对比</button>
-                        <button id="refreshVersionsBtn" class="refresh-btn">🔄 刷新版本</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 对比进度区域 -->
-        <section id="compareProgressSection" class="compare-progress-section" style="display: none;">
-            <div class="progress-container">
-                <h2>⚙️ 对比进行中</h2>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <div class="progress-text" id="progressText">准备开始对比...</div>
-            </div>
-        </section>
-
-        <!-- 对比结果区域 -->
-        <section id="compareResultsSection" class="compare-results-section" style="display: none;">
-            <div class="results-container">
-                <div class="results-header">
-                    <div class="results-header-top">
-                        <h2>📊 对比结果</h2>
-                        <button id="backToCompareBtn" class="back-btn">← 返回选择</button>
-                    </div>
-                    <div class="results-summary" id="resultsSummary">
-                        <!-- 结果统计将在这里显示 -->
-                    </div>
-                </div>
-                
-                <div class="results-tabs">
-                    <button id="addedTab" class="result-tab active">➕ 新增卡牌</button>
-                    <button id="modifiedTab" class="result-tab">✏️ 修改卡牌</button>
-                    <button id="deletedTab" class="result-tab">🗑️ 删除卡牌</button>
-                </div>
-                
-                <!-- 导出功能区域 -->
-                <div class="export-section">
-                    <h3>📤 导出CardID</h3>
-                    <div class="export-controls">
-                        <button id="exportTxtBtn" class="export-btn">📄 导出TXT</button>
-                        <button id="exportExcelBtn" class="export-btn">📊 导出Excel</button>
-                    </div>
-                </div>
-                
-                <div class="results-content">
-                    <div id="addedCards" class="result-content active">
-                        <!-- 新增卡牌将在这里显示 -->
-                    </div>
-                    <div id="modifiedCards" class="result-content">
-                        <!-- 修改卡牌将在这里显示 -->
-                    </div>
-                    <div id="deletedCards" class="result-content">
-                        <!-- 删除卡牌将在这里显示 -->
-                    </div>
-                </div>
-                
-                <div class="results-actions">
-                    <button id="exportResultsBtn" class="export-btn">💾 导出结果</button>
-                    <button id="newCompareBtn" class="new-compare-btn">🔄 新的对比</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 卡牌详情模态框 -->
-        <div id="cardModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="modalCardName">卡牌对比详情</h3>
-                    <button id="closeModal" class="close-btn">✖️</button>
-                </div>
-                <div class="modal-body">
-                    <div id="cardCompareDetails">
-                        <!-- 卡牌对比详细信息将在这里显示 -->
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
-        // 功能选择逻辑
+        // 功能选择逻辑 - 所有功能都跳转到独立页面
         document.getElementById('selectCompareBtn').addEventListener('click', () => {
-            document.getElementById('featureSelectionSection').style.display = 'none';
-            document.querySelector('.version-selection-section').style.display = 'block';
+            window.location.href = 'version-compare.html';
         });
 
         document.getElementById('selectDeckBtn').addEventListener('click', () => {
@@ -724,11 +611,6 @@
 
         document.getElementById('selectRulesetBtn').addEventListener('click', () => {
             window.location.href = 'deck-ruleset.html';
-        });
-
-        document.getElementById('backToMenuBtn').addEventListener('click', () => {
-            document.querySelector('.version-selection-section').style.display = 'none';
-            document.getElementById('featureSelectionSection').style.display = 'block';
         });
     </script>
     <script src="shared-config.js"></script>

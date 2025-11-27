@@ -15,12 +15,6 @@ class DeckTemplateSystem {
     
     async init() {
         console.log('🚀 DeckTemplateSystem 初始化开始');
-        
-        // 注册使用的数据文件
-        if (window.SharedDataConfig) {
-            window.SharedDataConfig.registerUsedFiles(['DECK_TEMPLATE', 'DECK', 'DECK_CARD', 'CLASS', 'CARD']);
-        }
-        
         this.setupEventListeners();
         await this.detectVersions();
         console.log('✅ DeckTemplateSystem 初始化完成');

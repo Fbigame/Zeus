@@ -1,61 +1,197 @@
 /* 套牌规则集查看器样式 */
 
-/* 页面头部 */
-.page-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 30px;
-    color: white;
-    text-align: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.page-header h1 {
+/* 基础重置 */
+* {
     margin: 0;
-    font-size: 32px;
-    font-weight: 600;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-.page-header p {
-    margin: 10px 0 0;
-    font-size: 16px;
-    opacity: 0.95;
+body {
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    line-height: 1.6;
 }
 
-/* 操作按钮 */
-.action-button {
-    padding: 12px 28px;
-    font-size: 16px;
-    border: none;
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-size: 2.2em;
+}
+
+h2 {
+    color: #34495e;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+h3 {
+    color: #2980b9;
+    margin-bottom: 15px;
+}
+
+h4 {
+    color: #34495e;
+    margin-bottom: 10px;
+}
+
+/* 版本选择区域 */
+.version-selection-section {
+    margin-bottom: 30px;
+}
+
+.version-container {
+    background: white;
+    padding: 25px;
     border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+}
+
+.version-detection {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.detection-status {
+    font-size: 1.1em;
+    color: #2c3e50;
+}
+
+.version-selector {
+    margin-top: 20px;
+}
+
+.version-single {
+    margin-bottom: 25px;
+}
+
+.version-item h3 {
+    color: #2980b9;
+    margin-bottom: 10px;
+}
+
+.version-select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
     cursor: pointer;
-    font-weight: 500;
+}
+
+.version-select:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+.version-info {
+    margin-top: 10px;
+    padding: 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.version-info div {
+    margin-bottom: 5px;
+}
+
+.version-info div:last-child {
+    margin-bottom: 0;
+}
+
+.status-ready {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.status-error {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+/* 按钮样式 */
+.load-btn, .refresh-btn, .export-btn, .back-btn, .back-to-menu-btn {
+    padding: 12px 24px;
+    margin: 0 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
     transition: all 0.3s ease;
 }
 
-.action-button.primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.load-btn {
+    background-color: #27ae60;
     color: white;
 }
 
-.action-button.secondary {
-    background: #f8f9fa;
-    color: #495057;
-    border: 1px solid #dee2e6;
+.load-btn:hover:not(:disabled) {
+    background-color: #229954;
 }
 
-.action-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.action-button:active {
-    transform: translateY(0);
-}
-
-.action-button:disabled {
-    opacity: 0.6;
+.load-btn:disabled {
+    background-color: #bdc3c7;
     cursor: not-allowed;
-    transform: none;
+}
+
+.refresh-btn {
+    background-color: #3498db;
+    color: white;
+}
+
+.refresh-btn:hover {
+    background-color: #2980b9;
+}
+
+.export-btn {
+    background-color: #e67e22;
+    color: white;
+}
+
+.export-btn:hover {
+    background-color: #d35400;
+}
+
+.back-btn {
+    padding: 8px 16px;
+    background-color: #95a5a6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background-color: #7f8c8d;
+}
+
+.back-to-menu-btn {
+    padding: 8px 16px;
+    background-color: #95a5a6;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.back-to-menu-btn:hover {
+    background-color: #7f8c8d;
 }
 
 /* 版本检测区域 */
@@ -209,6 +345,30 @@
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+}
+
+/* 搜索框样式 */
+.ruleset-filters {
+    margin-bottom: 25px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-input::placeholder {
+    color: #999;
 }
 
 /* 规则集操作栏 */
@@ -529,6 +689,19 @@
 
 .rule-detail-item strong {
     color: #333;
+}
+
+.subset-link {
+    color: #667eea;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    font-weight: 500;
+}
+
+.subset-link:hover {
+    color: #764ba2;
+    text-decoration: underline;
 }
 
 /* 响应式设计 */

@@ -43,12 +43,6 @@ class VersionCompareSystem {
     
     async init() {
         console.log('🚀 VersionCompareSystem 初始化开始');
-        
-        // 注册使用的数据文件
-        if (window.SharedDataConfig) {
-            window.SharedDataConfig.registerUsedFiles(['CARD']);
-        }
-        
         this.setupEventListeners();
         console.log('📝 事件监听器设置完成');
         await this.detectVersions();
@@ -57,30 +51,51 @@ class VersionCompareSystem {
     
     setupEventListeners() {
         // 版本选择
-        document.getElementById('oldVersionSelect').addEventListener('change', () => this.onVersionSelect());
-        document.getElementById('newVersionSelect').addEventListener('change', () => this.onVersionSelect());
-        document.getElementById('startCompareBtn').addEventListener('click', () => this.startCompare());
-        document.getElementById('refreshVersionsBtn').addEventListener('click', () => this.detectVersions());
+        const oldVersionSelect = document.getElementById('oldVersionSelect');
+        const newVersionSelect = document.getElementById('newVersionSelect');
+        const startCompareBtn = document.getElementById('startCompareBtn');
+        const refreshVersionsBtn = document.getElementById('refreshVersionsBtn');
+        
+        if (oldVersionSelect) oldVersionSelect.addEventListener('change', () => this.onVersionSelect());
+        if (newVersionSelect) newVersionSelect.addEventListener('change', () => this.onVersionSelect());
+        if (startCompareBtn) startCompareBtn.addEventListener('click', () => this.startCompare());
+        if (refreshVersionsBtn) refreshVersionsBtn.addEventListener('click', () => this.detectVersions());
         
         // 结果标签页
-        document.getElementById('addedTab').addEventListener('click', () => this.switchResultTab('added'));
-        document.getElementById('modifiedTab').addEventListener('click', () => this.switchResultTab('modified'));
-        document.getElementById('deletedTab').addEventListener('click', () => this.switchResultTab('deleted'));
+        const addedTab = document.getElementById('addedTab');
+        const modifiedTab = document.getElementById('modifiedTab');
+        const deletedTab = document.getElementById('deletedTab');
+        
+        if (addedTab) addedTab.addEventListener('click', () => this.switchResultTab('added'));
+        if (modifiedTab) modifiedTab.addEventListener('click', () => this.switchResultTab('modified'));
+        if (deletedTab) deletedTab.addEventListener('click', () => this.switchResultTab('deleted'));
         
         // 操作按钮
-        document.getElementById('exportResultsBtn').addEventListener('click', () => this.exportResults());
-        document.getElementById('newCompareBtn').addEventListener('click', () => this.resetCompare());
-        document.getElementById('backToCompareBtn').addEventListener('click', () => this.resetCompare());
+        const exportResultsBtn = document.getElementById('exportResultsBtn');
+        const newCompareBtn = document.getElementById('newCompareBtn');
+        const backToCompareBtn = document.getElementById('backToCompareBtn');
+        
+        if (exportResultsBtn) exportResultsBtn.addEventListener('click', () => this.exportResults());
+        if (newCompareBtn) newCompareBtn.addEventListener('click', () => this.resetCompare());
+        if (backToCompareBtn) backToCompareBtn.addEventListener('click', () => this.resetCompare());
         
         // 导出CardID按钮
-        document.getElementById('exportTxtBtn').addEventListener('click', () => this.exportCardIds('txt'));
-        document.getElementById('exportExcelBtn').addEventListener('click', () => this.exportCardIds('excel'));
+        const exportTxtBtn = document.getElementById('exportTxtBtn');
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
+        
+        if (exportTxtBtn) exportTxtBtn.addEventListener('click', () => this.exportCardIds('txt'));
+        if (exportExcelBtn) exportExcelBtn.addEventListener('click', () => this.exportCardIds('excel'));
         
         // 模态框
-        document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
-        document.getElementById('cardModal').addEventListener('click', (e) => {
-            if (e.target.id === 'cardModal') this.closeModal();
-        });
+        const closeModal = document.getElementById('closeModal');
+        const cardModal = document.getElementById('cardModal');
+        
+        if (closeModal) closeModal.addEventListener('click', () => this.closeModal());
+        if (cardModal) {
+            cardModal.addEventListener('click', (e) => {
+                if (e.target.id === 'cardModal') this.closeModal();
+            });
+        }
     }
     
     // 检测版本文件夹

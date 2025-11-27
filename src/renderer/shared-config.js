@@ -2,10 +2,17 @@
 // 用于管理各功能模块使用的数据文件，避免在数据查看器中重复显示
 
 const SharedDataConfig = {
-    // 已被功能模块使用的文件列表
-    usedFiles: new Set(),
+    // 已被功能模块使用的文件列表（硬编码预注册）
+    usedFiles: new Set([
+        // 版本对比功能使用
+        'CARD', 'CARD_TAG',
+        // 套牌模板功能使用
+        'DECK_TEMPLATE', 'DECK', 'DECK_CARD', 'CLASS',
+        // 规则集查看器使用
+        'DECK_RULESET', 'DECK_RULESET_RULE', 'DECK_RULESET_RULE_SUBSET', 'SUBSET'
+    ]),
     
-    // 注册已使用的文件
+    // 注册已使用的文件（保留接口以便将来扩展）
     registerUsedFiles: function(fileNames) {
         if (Array.isArray(fileNames)) {
             fileNames.forEach(file => this.usedFiles.add(file));

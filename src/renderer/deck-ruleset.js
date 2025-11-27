@@ -5,29 +5,59 @@ class DeckRulesetSystem {
         this.dataPath = './data';
         this.allRulesets = [];
         this.filteredRulesets = [];
+        this.subsets = {}; // 存储子集数据
+        this.subsetRules = {}; // 存储子集规则数据
         
-        // 规则类型映射
+        // 规则类型映射 (DeckRulesetRule.RuleType)
         this.ruleTypes = {
-            1: '包含卡牌集',
-            2: '排除卡牌集',
-            3: '最小卡牌数',
-            4: '最大卡牌副本数',
-            5: '需要特定卡牌',
-            6: '禁止特定卡牌',
-            7: '总法力值限制',
-            8: '卡牌稀有度限制',
-            9: '职业限制',
-            10: '种族限制',
-            11: '卡牌类型限制',
-            12: '英雄卡牌要求',
-            13: '攻击力限制',
-            14: '生命值限制',
-            15: '格式限制',
-            16: '标签限制',
-            17: '卡牌价值限制',
-            18: '子集限制',
-            19: '最小法力值',
-            20: '最大法力值'
+            0: '无效规则类型',
+            1: '具有标签值',
+            2: '具有奇数标签值',
+            3: '统计套牌中的卡牌数',
+            4: '统计每张卡的副本数',
+            5: '统计具有标签值的卡牌',
+            6: '统计具有奇数标签值的卡牌',
+            7: '统计具有相同标签值的卡牌',
+            8: '统计唯一标签值数量',
+            9: '在任一子集中',
+            10: '在所有子集中',
+            11: '卡牌文本包含子字符串',
+            12: '玩家拥有每张副本',
+            13: '未轮换',
+            14: '套牌大小',
+            15: '是职业或中立卡牌',
+            16: '卡牌可用',
+            17: '未在联赛中禁用',
+            18: '在酒馆战棋中激活',
+            19: '在酒馆战棋中抢先体验',
+            20: '在卡牌集中',
+            21: '在模式中',
+            22: '编辑套牌额外卡牌数',
+            23: '死亡骑士符文限制',
+            24: '备用卡牌数量限制',
+            25: '备用卡牌具有标签值',
+            27: '玩家拥有套牌模板',
+            28: '游客限制',
+            29: '是双职业或中立卡牌'
+        };
+        
+        // 子集规则类型映射 (SubsetRule.Type)
+        this.subsetRuleTypes = {
+            0: '无效',
+            1: '具有标签值',
+            2: '具有奇数标签值',
+            3: '是卡牌数据库ID',
+            4: '是最新卡牌集',
+            5: '未标记值',
+            6: '未轮换',
+            7: '可征召',
+            8: '卡牌可用',
+            9: '在酒馆战棋中激活',
+            10: '在酒馆战棋中抢先体验',
+            11: '在每个酒馆战棋中',
+            12: '是最新扩展卡牌集',
+            13: '是多职业',
+            14: '具有多种类型'
         };
         
         this.init();
@@ -35,12 +65,6 @@ class DeckRulesetSystem {
     
     async init() {
         console.log('🚀 DeckRulesetSystem 初始化开始');
-        
-        // 注册使用的数据文件
-        if (window.SharedDataConfig) {
-            window.SharedDataConfig.registerUsedFiles(['DECK_RULESET', 'DECK_RULESET_RULE', 'DECK_RULESET_RULE_SUBSET']);
-        }
-        
         this.setupEventListeners();
         await this.detectVersions();
         console.log('✅ DeckRulesetSystem 初始化完成');
@@ -68,6 +92,12 @@ class DeckRulesetSystem {
         document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
         document.getElementById('rulesetModal').addEventListener('click', (e) => {
             if (e.target.id === 'rulesetModal') this.closeModal();
+        });
+        
+        // 子集模态框
+        document.getElementById('closeSubsetModal').addEventListener('click', () => this.closeSubsetModal());
+        document.getElementById('subsetModal').addEventListener('click', (e) => {
+            if (e.target.id === 'subsetModal') this.closeSubsetModal();
         });
     }
     
@@ -228,9 +258,13 @@ class DeckRulesetSystem {
             const rules = await this.loadRulesetRules(version);
             console.log('✅ 规则详情加载完成:', rules.length);
             
-            this.updateProgress(80, '正在加载规则子集关联...');
+            this.updateProgress(70, '正在加载规则子集关联...');
             const ruleSubsets = await this.loadRulesetRuleSubsets(version);
             console.log('✅ 规则子集关联加载完成:', ruleSubsets.length);
+            
+            this.updateProgress(85, '正在加载子集定义...');
+            await this.loadSubsets(version);
+            console.log('✅ 子集定义加载完成:', Object.keys(this.subsets).length);
             
             this.updateProgress(95, '正在关联数据...');
             this.allRulesets = this.associateData(rulesets, rules, ruleSubsets);
@@ -269,6 +303,42 @@ class DeckRulesetSystem {
         
         const data = JSON.parse(result.data);
         return data.Records || [];
+    }
+    
+    async loadSubsets(version) {
+        // 加载 SUBSET.json
+        const subsetPath = `data/${version}/SUBSET.json`;
+        const subsetResult = await window.fileAPI.readFile(subsetPath);
+        
+        if (subsetResult.success) {
+            const data = JSON.parse(subsetResult.data);
+            if (data.Records) {
+                data.Records.forEach(record => {
+                    this.subsets[record.m_ID] = record;
+                });
+            }
+        } else {
+            console.warn('未能加载子集定义数据，子集详情功能可能不可用');
+        }
+        
+        // 加载 SUBSET_RULE.json
+        const subsetRulePath = `data/${version}/SUBSET_RULE.json`;
+        const subsetRuleResult = await window.fileAPI.readFile(subsetRulePath);
+        
+        if (subsetRuleResult.success) {
+            const data = JSON.parse(subsetRuleResult.data);
+            if (data.Records) {
+                data.Records.forEach(record => {
+                    if (!this.subsetRules[record.m_subsetId]) {
+                        this.subsetRules[record.m_subsetId] = [];
+                    }
+                    this.subsetRules[record.m_subsetId].push(record);
+                });
+                console.log(`✅ 加载了 ${data.Records.length} 条子集规则`);
+            }
+        } else {
+            console.warn('未能加载子集规则数据');
+        }
     }
     
     async loadRulesetRuleSubsets(version) {
@@ -464,6 +534,7 @@ class DeckRulesetSystem {
                                 ${rule.appliesToSubsetId ? `
                                     <div class="rule-detail-item">
                                         <strong>应用于子集:</strong> ${rule.appliesToSubsetId}
+                                        <button class="view-subset-btn" onclick="rulesetSystem.showSubsetDetails(${rule.appliesToSubsetId}); return false;">🔍 查看</button>
                                     </div>
                                 ` : ''}
                                 ${rule.tagId ? `
@@ -505,6 +576,74 @@ class DeckRulesetSystem {
     
     closeModal() {
         document.getElementById('rulesetModal').style.display = 'none';
+    }
+    
+    showSubsetDetails(subsetId) {
+        const subset = this.subsets[subsetId];
+        if (!subset) {
+            alert(`未找到子集 ID: ${subsetId}`);
+            return;
+        }
+        
+        document.getElementById('modalSubsetName').textContent = `子集 ${subsetId}`;
+        
+        const details = document.getElementById('subsetDetails');
+        details.innerHTML = `
+            <div class="ruleset-details-info">
+                <h4>基本信息</h4>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>子集ID:</strong> ${subset.m_ID}
+                    </div>
+                    <div class="info-item">
+                        <strong>资产标志:</strong> ${subset.m_assetFlags || 'N/A'}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="ruleset-details-rules">
+                <h4>子集规则</h4>
+                <div class="rule-list">
+                    ${this.subsetRules[subsetId] && this.subsetRules[subsetId].length > 0 ? this.subsetRules[subsetId].map((rule, index) => {
+                        const ruleTypeName = this.subsetRuleTypes[rule.m_type] || `未知类型(${rule.m_type})`;
+                        return `
+                            <div class="rule-list-item">
+                                <div class="rule-header">
+                                    <span class="rule-id">子集规则 #${index + 1}</span>
+                                    <span class="rule-type">${ruleTypeName}</span>
+                                </div>
+                                <div class="rule-details">
+                                    ${rule.m_minValue !== undefined || rule.m_maxValue !== undefined ? `
+                                        <div class="rule-detail-item">
+                                            <strong>范围:</strong> ${rule.m_minValue || 0} - ${rule.m_maxValue || 0}
+                                        </div>
+                                    ` : ''}
+                                    ${rule.m_intValue !== undefined ? `
+                                        <div class="rule-detail-item">
+                                            <strong>整数值:</strong> ${rule.m_intValue}
+                                        </div>
+                                    ` : ''}
+                                    ${rule.m_stringValue ? `
+                                        <div class="rule-detail-item">
+                                            <strong>字符串值:</strong> ${rule.m_stringValue}
+                                        </div>
+                                    ` : ''}
+                                    <div class="rule-detail-item">
+                                        <strong>反转规则:</strong> ${rule.m_not ? '是' : '否'}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('') : '<p style="color: #6c757d; text-align: center; padding: 20px;">该子集没有规则</p>'}
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('subsetModal').style.display = 'block';
+    }
+    
+    closeSubsetModal() {
+        document.getElementById('subsetModal').style.display = 'none';
     }
     
     backToVersionSelect() {

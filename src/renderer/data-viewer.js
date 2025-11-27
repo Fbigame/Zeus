@@ -121,26 +121,28 @@ class DataViewerSystem {
         // 从全局配置读取已在其他功能中使用的文件列表
         const excludedFiles = window.SharedDataConfig ? window.SharedDataConfig.getUsedFiles() : [];
         
-        // 获取所有JSON文件
-        const allFiles = [
-            'ACCOUNT_LICENSE', 'ACHIEVE', 'ACHIEVEMENT', 'ACHIEVEMENT_CATEGORY', 'ACHIEVEMENT_SECTION',
-            'ACHIEVEMENT_SECTION_ITEM', 'ACHIEVEMENT_SUBCATEGORY', 'ACHIEVE_CONDITION', 'ACHIEVE_REGION_DATA',
-            'ADVENTURE', 'ADVENTURE_DATA', 'ADVENTURE_DECK', 'ADVENTURE_GUEST_HEROES', 'ADVENTURE_HERO_POWER',
-            'ADVENTURE_LOADOUT_TREASURES', 'ADVENTURE_MISSION', 'ADVENTURE_MODE', 'BANNER',
-            'BATTLEGROUNDS_BOARD_SKIN', 'BATTLEGROUNDS_EMOTE', 'BATTLEGROUNDS_FINISHER', 'BATTLEGROUNDS_GUIDE_SKIN',
-            'BATTLEGROUNDS_HERO_SKIN', 'BATTLEGROUNDS_SEASON', 'BOARD', 'BONUS_BOUNTY_DROP_CHANCE',
-            'BOOSTER', 'BOOSTER_CARD_SET', 'BOX_PRODUCT_BANNER', 'BUILDING_TIER',
-            'CARD', 'CARD_ADDITONAL_SEARCH_TERMS', 'CARD_BACK', 'CARD_CHANGE', 'CARD_DISCOVER_STRING',
-            'CARD_EQUIPMENT_ALT_TEXT', 'CARD_HERO', 'CARD_PLAYER_DECK_OVERRIDE', 'CARD_RACE', 'CARD_SET',
-            'CARD_SET_SPELL_OVERRIDE', 'CARD_SET_TIMING', 'CARD_TAG', 'CARD_VALUE', 'CATCHUP_PACK_EVENT',
-            'CHARACTER', 'CHARACTER_DIALOG', 'CHARACTER_DIALOG_ITEMS', 'CLASS', 'CLASS_EXCLUSIONS',
-            'CLIENT_STRING', 'COSMETIC_COIN', 'COUNTERPART_CARDS', 'CREDITS_YEAR',
-            'DECK', 'DECK_CARD', 'DECK_RULESET', 'DECK_RULESET_RULE', 'DECK_RULESET_RULE_SUBSET',
-            'DECK_TEMPLATE', 'DECK_TEMPLATE_CHOICES', 'DETAILS_VIDEO_CUE', 'DK_RUNE_LIST', 'DOPAsset',
-            'DRAFT_CONTENT', 'EventMap', 'EVENT_REWARD_TRACK', 'EXTERNAL_URL',
-            'FIXED_REWARD', 'FIXED_REWARD_ACTION', 'FIXED_REWARD_MAP', 'FORMULA', 'FORMULA_CHANGE_POINT',
-            'GAME_MODE', 'GAME_SAVE_SUBKEY', 'GLOBAL', 'GUEST_HERO', 'GUEST_HERO_SELECTION_RATIO'
-        ];
+        // 动态扫描版本目录获取所有JSON文件
+        let allFiles = [];
+        try {
+            if (window.fileAPI) {
+                const scanPath = `data/${version}`;
+                const result = await window.fileAPI.scanFiles(scanPath, '.json');
+                
+                if (result.success) {
+                    // 从文件名中提取不带扩展名的部分
+                    allFiles = result.files
+                        .filter(file => file.endsWith('.json'))
+                        .map(file => file.replace('.json', ''))
+                        .sort();
+                    
+                    console.log(`📁 扫描到 ${allFiles.length} 个JSON文件`);
+                } else {
+                    console.error('文件扫描失败:', result.error);
+                }
+            }
+        } catch (error) {
+            console.error('扫描文件时出错:', error);
+        }
         
         // 过滤掉已使用的文件
         this.availableFiles = allFiles.filter(file => !excludedFiles.includes(file));
