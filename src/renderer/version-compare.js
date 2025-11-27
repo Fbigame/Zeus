@@ -43,6 +43,12 @@ class VersionCompareSystem {
     
     async init() {
         console.log('🚀 VersionCompareSystem 初始化开始');
+        
+        // 注册使用的数据文件
+        if (window.SharedDataConfig) {
+            window.SharedDataConfig.registerUsedFiles(['CARD']);
+        }
+        
         this.setupEventListeners();
         console.log('📝 事件监听器设置完成');
         await this.detectVersions();

@@ -547,6 +547,10 @@
                 gap: 20px;
             }
             
+            .feature-buttons {
+                grid-template-columns: 1fr;
+            }
+            
             .card-changes {
                 grid-template-columns: 1fr;
             }
@@ -575,6 +579,16 @@
                         <div class="feature-icon">🃏</div>
                         <div class="feature-title">套牌模板</div>
                         <div class="feature-desc">查看和管理套牌模板数据</div>
+                    </button>
+                    <button id="selectDataViewerBtn" class="feature-btn">
+                        <div class="feature-icon">🗂️</div>
+                        <div class="feature-title">数据查看器</div>
+                        <div class="feature-desc">浏览所有游戏数据文件</div>
+                    </button>
+                    <button id="selectRulesetBtn" class="feature-btn">
+                        <div class="feature-icon">📋</div>
+                        <div class="feature-title">规则集查看器</div>
+                        <div class="feature-desc">查看套牌构筑规则集</div>
                     </button>
                 </div>
             </div>
@@ -704,11 +718,19 @@
             window.location.href = 'deck-template.html';
         });
 
+        document.getElementById('selectDataViewerBtn').addEventListener('click', () => {
+            window.location.href = 'data-viewer.html';
+        });
+
+        document.getElementById('selectRulesetBtn').addEventListener('click', () => {
+            window.location.href = 'deck-ruleset.html';
+        });
+
         document.getElementById('backToMenuBtn').addEventListener('click', () => {
             document.querySelector('.version-selection-section').style.display = 'none';
             document.getElementById('featureSelectionSection').style.display = 'block';
         });
     </script>
-    <script src="version-compare.js"></script>
+    <script src="shared-config.js"></script>
 </body>
 </html>

@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
-    <title>炉石传说套牌模板</title>
-    <link rel="stylesheet" href="deck-template.css">
+    <title>炉石传说套牌规则集</title>
+    <link rel="stylesheet" href="deck-ruleset.css">
 </head>
 <body>
     <div class="container">
-        <h1>🃏 炉石传说套牌模板</h1>
+        <h1>📋 炉石传说套牌规则集</h1>
 
         <!-- 版本选择区域 -->
         <section class="version-selection-section">
@@ -35,7 +35,7 @@
                     </div>
                     
                     <div class="load-controls">
-                        <button id="loadDecksBtn" class="load-btn" disabled>📥 加载套牌</button>
+                        <button id="loadRulesetsBtn" class="load-btn" disabled>📥 加载规则集</button>
                         <button id="refreshVersionsBtn" class="refresh-btn">🔄 刷新版本</button>
                     </div>
                 </div>
@@ -53,51 +53,43 @@
             </div>
         </section>
 
-        <!-- 套牌列表区域 -->
-        <section id="deckListSection" class="deck-list-section" style="display: none;">
-            <div class="deck-container">
-                <div class="deck-header">
-                    <div class="deck-header-top">
-                        <h2>📋 套牌列表</h2>
+        <!-- 规则集列表区域 -->
+        <section id="rulesetListSection" class="ruleset-list-section" style="display: none;">
+            <div class="ruleset-container">
+                <div class="ruleset-header">
+                    <div class="ruleset-header-top">
+                        <h2>📋 规则集列表</h2>
                         <div>
                             <button id="backToVersionBtn" class="back-btn">← 返回选择</button>
-                            <button id="exportDecksBtn" class="export-btn">💾 导出套牌</button>
+                            <button id="exportRulesetsBtn" class="export-btn">💾 导出规则集</button>
                         </div>
                     </div>
-                    <div class="deck-summary" id="deckSummary">
-                        <!-- 套牌统计信息 -->
+                    <div class="ruleset-summary" id="rulesetSummary">
+                        <!-- 规则集统计信息 -->
                     </div>
                 </div>
 
-                <!-- 过滤和搜索 -->
-                <div class="deck-filters">
-                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索套牌名称...">
-                    <select id="classFilter" class="filter-select">
-                        <option value="">所有职业</option>
-                    </select>
-                    <select id="formatFilter" class="filter-select">
-                        <option value="">所有模式</option>
-                        <option value="standard">标准模式</option>
-                        <option value="wild">狂野模式</option>
-                    </select>
+                <!-- 搜索 -->
+                <div class="ruleset-filters">
+                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索规则集ID...">
                 </div>
                 
-                <div class="deck-list" id="deckList">
-                    <!-- 套牌列表将在这里显示 -->
+                <div class="ruleset-list" id="rulesetList">
+                    <!-- 规则集列表将在这里显示 -->
                 </div>
             </div>
         </section>
 
-        <!-- 套牌详情模态框 -->
-        <div id="deckModal" class="modal">
+        <!-- 规则集详情模态框 -->
+        <div id="rulesetModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 id="modalDeckName">套牌详情</h3>
+                    <h3 id="modalRulesetName">规则集详情</h3>
                     <button id="closeModal" class="close-btn">✖️</button>
                 </div>
                 <div class="modal-body">
-                    <div id="deckDetails">
-                        <!-- 套牌详细信息将在这里显示 -->
+                    <div id="rulesetDetails">
+                        <!-- 规则集详细信息将在这里显示 -->
                     </div>
                 </div>
             </div>
@@ -105,6 +97,6 @@
     </div>
 
     <script src="shared-config.js"></script>
-    <script src="deck-template.js"></script>
+    <script src="deck-ruleset.js"></script>
 </body>
 </html>

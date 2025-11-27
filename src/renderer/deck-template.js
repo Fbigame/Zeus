@@ -7,40 +7,50 @@ class DeckTemplateSystem {
         this.allDecks = [];
         this.filteredDecks = [];
         this.cardNameMap = new Map(); // 卡牌ID到名称的映射
-        
-        // 职业映射
-        this.classNames = {
-            1: '死亡骑士',
-            2: '德鲁伊',
-            3: '猎人',
-            4: '法师',
-            5: '圣骑士',
-            6: '牧师',
-            7: '潜行者',
-            8: '萨满祭司',
-            9: '术士',
-            10: '战士',
-            14: '恶魔猎手',
-            12: '中立'
-        };
-        
-        // 职业默认英雄ID映射
-        this.classHeroIds = {
-            1: 78065,  // 死亡骑士
-            2: 274,    // 德鲁伊
-            3: 31,     // 猎人
-            4: 637,    // 法师
-            5: 671,    // 圣骑士
-            6: 813,    // 牧师
-            7: 930,    // 潜行者
-            8: 1066,   // 萨满祭司
-            9: 893,    // 术士
-            10: 7,     // 战士
-            14: 56550, // 恶魔猎手
-            12: 0      // 中立
-        };
+        this.classNames = {}; // 职业ID到名称的映射
+        this.classHeroIds = {}; // 职业ID到默认英雄ID的映射
         
         this.init();
+    }
+    
+    async init() {
+        console.log('🚀 DeckTemplateSystem 初始化开始');
+        
+        // 注册使用的数据文件
+        if (window.SharedDataConfig) {
+            window.SharedDataConfig.registerUsedFiles(['DECK_TEMPLATE', 'DECK', 'DECK_CARD', 'CLASS', 'CARD']);
+        }
+        
+        this.setupEventListeners();
+        await this.detectVersions();
+        console.log('✅ DeckTemplateSystem 初始化完成');
+    }
+    
+    setupEventListeners() {
+        // 返回首页
+        document.getElementById('backToIndexBtn').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+        
+        // 版本选择
+        document.getElementById('versionSelect').addEventListener('change', () => this.onVersionSelect());
+        document.getElementById('loadDecksBtn').addEventListener('click', () => this.loadDecks());
+        document.getElementById('refreshVersionsBtn').addEventListener('click', () => this.detectVersions());
+        
+        // 套牌操作
+        document.getElementById('backToVersionBtn').addEventListener('click', () => this.backToVersionSelect());
+        document.getElementById('exportDecksBtn').addEventListener('click', () => this.exportDecks());
+        
+        // 筛选和搜索
+        document.getElementById('classFilter').addEventListener('change', () => this.filterDecks());
+        document.getElementById('searchInput').addEventListener('input', () => this.filterDecks());
+        
+        // 模态框
+        document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
+        document.getElementById('copyDeckCodeBtn').addEventListener('click', () => this.copyDeckCode());
+        document.getElementById('deckModal').addEventListener('click', (e) => {
+            if (e.target.id === 'deckModal') this.closeModal();
+        });
     }
     
     // Varint 编码
@@ -336,11 +346,15 @@ class DeckTemplateSystem {
             const cards = await this.loadDeckCards(version);
             console.log('✅ 卡牌信息加载完成:', cards.length);
             
-            this.updateProgress(80, '正在加载卡牌名称...');
+            this.updateProgress(75, '正在加载职业信息...');
+            await this.loadClassInfo(version);
+            console.log('✅ 职业信息加载完成');
+            
+            this.updateProgress(85, '正在加载卡牌名称...');
             await this.loadCardNames(version);
             console.log('✅ 卡牌名称加载完成');
             
-            this.updateProgress(90, '正在关联数据...');
+            this.updateProgress(95, '正在关联数据...');
             this.allDecks = this.associateData(templates, decks, cards);
             console.log('✅ 数据关联完成:', this.allDecks.length);
             
@@ -392,6 +406,45 @@ class DeckTemplateSystem {
         
         const data = JSON.parse(result.data);
         return data.Records || [];
+    }
+    
+    // 加载职业信息
+    async loadClassInfo(version) {
+        const filePath = `data/${version}/CLASS.json`;
+        const result = await window.fileAPI.readFile(filePath);
+        
+        if (!result.success) {
+            console.warn('无法读取 CLASS.json，使用默认职业信息');
+            // 使用默认值
+            this.classNames = {
+                1: '死亡骑士', 2: '德鲁伊', 3: '猎人', 4: '法师',
+                5: '圣骑士', 6: '牧师', 7: '潜行者', 8: '萨满祭司',
+                9: '术士', 10: '战士', 14: '恶魔猎手', 12: '中立'
+            };
+            this.classHeroIds = {
+                1: 78065, 2: 274, 3: 31, 4: 637, 5: 671, 6: 813,
+                7: 930, 8: 1066, 9: 893, 10: 7, 14: 56550, 12: 0
+            };
+            return;
+        }
+        
+        const data = JSON.parse(result.data);
+        const classes = data.Records || [];
+        
+        // 创建职业映射
+        this.classNames = {};
+        this.classHeroIds = {};
+        
+        classes.forEach(cls => {
+            const classId = cls.m_ID;
+            const className = cls.m_name ? this.extractLocalizedText(cls.m_name) : `职业${classId}`;
+            const heroId = cls.m_defaultHeroCardId || 0;
+            
+            this.classNames[classId] = className;
+            this.classHeroIds[classId] = heroId;
+        });
+        
+        console.log(`✅ 已加载 ${Object.keys(this.classNames).length} 个职业信息`);
     }
     
     // 加载卡牌名称

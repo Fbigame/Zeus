@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <title>炉石传说数据查看器</title>
+    <link rel="stylesheet" href="data-viewer.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🗂️ 炉石传说数据查看器</h1>
+
+        <!-- 版本和文件选择区域 -->
+        <section class="selection-section">
+            <button id="backToIndexBtn" class="back-to-menu-btn">← 返回首页</button>
+            <div class="selection-container">
+                <div class="selection-row">
+                    <div class="selection-item">
+                        <h3>📦 选择版本</h3>
+                        <select id="versionSelect" class="select-input">
+                            <option value="">请选择版本</option>
+                        </select>
+                    </div>
+                    
+                    <div class="selection-item">
+                        <h3>📄 选择数据文件</h3>
+                        <select id="fileSelect" class="select-input" disabled>
+                            <option value="">请先选择版本</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="load-controls">
+                    <button id="loadDataBtn" class="load-btn" disabled>📥 加载数据</button>
+                    <button id="refreshBtn" class="refresh-btn">🔄 刷新</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 数据显示区域 -->
+        <section id="dataDisplaySection" class="data-display-section" style="display: none;">
+            <div class="data-container">
+                <div class="data-header">
+                    <div class="data-header-top">
+                        <h2 id="dataTitle">📊 数据列表</h2>
+                        <div class="header-actions">
+                            <button id="backToSelectBtn" class="back-btn">← 返回选择</button>
+                            <button id="exportDataBtn" class="export-btn">💾 导出数据</button>
+                        </div>
+                    </div>
+                    <div class="data-summary" id="dataSummary">
+                        <!-- 数据统计 -->
+                    </div>
+                </div>
+
+                <!-- 搜索和过滤 -->
+                <div class="data-filters">
+                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索...">
+                    <select id="columnSelect" class="filter-select">
+                        <option value="">搜索所有字段</option>
+                    </select>
+                    <button id="toggleViewBtn" class="toggle-view-btn">📋 切换视图</button>
+                </div>
+                
+                <!-- 表格视图 -->
+                <div id="tableView" class="table-view">
+                    <div class="table-wrapper">
+                        <table id="dataTable" class="data-table">
+                            <thead id="tableHead">
+                                <!-- 表头将动态生成 -->
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- 数据将动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination">
+                        <button id="prevPageBtn" class="page-btn">◀ 上一页</button>
+                        <span id="pageInfo" class="page-info">第 1 页，共 1 页</span>
+                        <button id="nextPageBtn" class="page-btn">下一页 ▶</button>
+                        <select id="pageSizeSelect" class="page-size-select">
+                            <option value="20">20条/页</option>
+                            <option value="50" selected>50条/页</option>
+                            <option value="100">100条/页</option>
+                            <option value="200">200条/页</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- JSON视图 -->
+                <div id="jsonView" class="json-view" style="display: none;">
+                    <pre id="jsonContent" class="json-content"></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- 详情模态框 -->
+        <div id="detailModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">详细信息</h3>
+                    <button id="closeModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <pre id="detailContent" class="detail-content"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared-config.js"></script>
+    <script src="data-viewer.js"></script>
+</body>
+</html>
