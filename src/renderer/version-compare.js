@@ -266,6 +266,8 @@ class VersionCompareSystem {
             }
             
             const isValid = missingFiles.length === 0;
+            let status = '';
+            let statusClass = '';
             
             if (isValid) {
                 status = '✅ 准备就绪';
