@@ -207,9 +207,3 @@ button:active:not(:disabled) {
     background-color: #3498db;
     color: white;
 }
-
-/* 按钮间距 */
-.btn + .btn,
-button + button {
-    margin-left: 10px;
-}

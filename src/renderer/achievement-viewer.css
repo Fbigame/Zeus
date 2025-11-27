@@ -602,7 +602,7 @@ h2 {
 /* 过滤器 */
 .achievement-filters {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
     gap: 15px;
     margin-bottom: 25px;
 }
@@ -685,6 +685,17 @@ h2 {
     font-size: 14px;
     line-height: 1.6;
     margin-bottom: 12px;
+}
+
+.achievement-category-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    color: #764ba2;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(118, 75, 162, 0.2);
 }
 
 .achievement-info {

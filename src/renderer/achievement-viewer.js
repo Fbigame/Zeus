@@ -8,6 +8,8 @@ class AchievementSystem {
         this.categories = {};
         this.subcategories = {};
         this.sections = {};
+        this.sectionItems = []; // 章节项目关联
+        this.conditions = {}; // 成就条件映射
         this.currentView = 'achievement'; // 'achievement' or 'category'
         this.currentMode = 'normal'; // 'normal' or 'compare'
         this.compareData = {
@@ -59,7 +61,8 @@ class AchievementSystem {
         
         // 搜索和过滤
         document.getElementById('searchInput').addEventListener('input', () => this.filterAchievements());
-        document.getElementById('categoryFilter').addEventListener('change', () => this.filterAchievements());
+        document.getElementById('categoryFilter').addEventListener('change', () => this.onCategoryFilterChange());
+        document.getElementById('subcategoryFilter').addEventListener('change', () => this.onSubcategoryFilterChange());
         document.getElementById('sectionFilter').addEventListener('change', () => this.filterAchievements());
         
         // 模态框
@@ -247,9 +250,17 @@ class AchievementSystem {
             await this.loadSubcategories(version);
             console.log('✅ 子分类加载完成:', Object.keys(this.subcategories).length);
             
-            this.updateProgress(70, '正在加载章节...');
+            this.updateProgress(60, '正在加载章节...');
             await this.loadSections(version);
             console.log('✅ 章节加载完成:', Object.keys(this.sections).length);
+            
+            this.updateProgress(70, '正在加载章节项目...');
+            await this.loadSectionItems(version);
+            console.log('✅ 章节项目加载完成:', this.sectionItems.length);
+            
+            this.updateProgress(80, '正在加载成就条件...');
+            await this.loadConditions(version);
+            console.log('✅ 成就条件加载完成:', Object.keys(this.conditions).length);
             
             this.updateProgress(90, '正在关联数据...');
             this.allAchievements = this.associateData(achievements);
@@ -300,7 +311,7 @@ class AchievementSystem {
                 data.Records.forEach(subcat => {
                     this.subcategories[subcat.m_ID] = {
                         id: subcat.m_ID,
-                        categoryId: subcat.m_categoryId,
+                        categoryId: subcat.m_achievementCategoryId,
                         name: this.extractLocalizedText(subcat.m_name)
                     };
                 });
@@ -327,16 +338,65 @@ class AchievementSystem {
         }
     }
     
+    // 加载章节项目
+    async loadSectionItems(version) {
+        try {
+            const data = await window.dataManager.loadFile('ACHIEVEMENT_SECTION_ITEM', version);
+            if (data && data.Records) {
+                this.sectionItems = data.Records.map(item => ({
+                    id: item.m_ID,
+                    subcategoryId: item.m_achievementSubcategoryId,
+                    sectionId: item.m_achievementSectionId,
+                    sortOrder: item.m_sortOrder || 0
+                }));
+            }
+        } catch (error) {
+            console.warn('未能加载章节项目数据:', error);
+        }
+    }
+    
+    // 加载成就条件
+    async loadConditions(version) {
+        try {
+            const data = await window.dataManager.loadFile('ACHIEVE_CONDITION', version);
+            if (data && data.Records) {
+                data.Records.forEach(cond => {
+                    if (!this.conditions[cond.m_achieveId]) {
+                        this.conditions[cond.m_achieveId] = [];
+                    }
+                    this.conditions[cond.m_achieveId].push({
+                        id: cond.m_ID,
+                        scenarioId: cond.m_scenarioId
+                    });
+                });
+            }
+        } catch (error) {
+            console.warn('未能加载成就条件数据:', error);
+        }
+    }
+    
     // 关联数据
     associateData(achievements) {
         return achievements.map(ach => {
             const sectionId = ach.m_achievementSectionId;
             const section = this.sections[sectionId];
+            const conditions = this.conditions[ach.m_ID] || [];
+            
+            // 通过 SECTION_ITEM 查找对应的子分类
+            const sectionItem = this.sectionItems.find(item => item.sectionId === sectionId);
+            const subcategoryId = sectionItem?.subcategoryId;
+            const subcategory = subcategoryId ? this.subcategories[subcategoryId] : null;
+            const categoryId = subcategory?.categoryId;
+            const category = categoryId ? this.categories[categoryId] : null;
             
             return {
                 id: ach.m_ID,
                 sectionId: sectionId,
                 sectionName: section ? section.name : `章节${sectionId}`,
+                subcategoryId: subcategoryId,
+                subcategoryName: subcategory?.name || '',
+                categoryId: categoryId,
+                categoryName: category?.name || '',
                 sortOrder: ach.m_sortOrder || 0,
                 enabled: ach.m_enabled || 0,
                 name: this.extractLocalizedText(ach.m_name),
@@ -344,6 +404,8 @@ class AchievementSystem {
                 quota: ach.m_quota || 0,
                 points: ach.m_points || 0,
                 rewardTrackId: ach.m_rewardTrackId || 0,
+                conditions: conditions,
+                conditionCount: conditions.length,
                 raw: ach
             };
         });
@@ -503,7 +565,10 @@ class AchievementSystem {
         
         const achievements = await this.loadAchievementData(version);
         const categories = {};
+        const subcategories = {};
         const sections = {};
+        const sectionItems = [];
+        const conditions = {};
         
         try {
             const categoryData = await window.dataManager.loadFile('ACHIEVEMENT_CATEGORY', version);
@@ -520,6 +585,21 @@ class AchievementSystem {
         }
         
         try {
+            const subcategoryData = await window.dataManager.loadFile('ACHIEVEMENT_SUBCATEGORY', version);
+            if (subcategoryData && subcategoryData.Records) {
+                subcategoryData.Records.forEach(subcat => {
+                    subcategories[subcat.m_ID] = {
+                        id: subcat.m_ID,
+                        categoryId: subcat.m_achievementCategoryId,
+                        name: this.extractLocalizedText(subcat.m_name)
+                    };
+                });
+            }
+        } catch (error) {
+            console.warn('未能加载子分类数据:', error);
+        }
+        
+        try {
             const sectionData = await window.dataManager.loadFile('ACHIEVEMENT_SECTION', version);
             if (sectionData && sectionData.Records) {
                 sectionData.Records.forEach(sec => {
@@ -533,22 +613,75 @@ class AchievementSystem {
             console.warn('未能加载章节数据:', error);
         }
         
+        try {
+            const itemData = await window.dataManager.loadFile('ACHIEVEMENT_SECTION_ITEM', version);
+            if (itemData && itemData.Records) {
+                itemData.Records.forEach(item => {
+                    sectionItems.push({
+                        id: item.m_ID,
+                        subcategoryId: item.m_achievementSubcategoryId,
+                        sectionId: item.m_achievementSectionId,
+                        sortOrder: item.m_sortOrder || 0
+                    });
+                });
+            }
+        } catch (error) {
+            console.warn('未能加载章节项目数据:', error);
+        }
+        
+        try {
+            const condData = await window.dataManager.loadFile('ACHIEVE_CONDITION', version);
+            if (condData && condData.Records) {
+                condData.Records.forEach(cond => {
+                    if (!conditions[cond.m_achieveId]) {
+                        conditions[cond.m_achieveId] = [];
+                    }
+                    conditions[cond.m_achieveId].push({
+                        id: cond.m_ID,
+                        scenarioId: cond.m_scenarioId
+                    });
+                });
+            }
+        } catch (error) {
+            console.warn('未能加载成就条件数据:', error);
+        }
+        
         return {
-            achievements: achievements.map(ach => ({
-                id: ach.m_ID,
-                sectionId: ach.m_achievementSectionId,
-                sectionName: sections[ach.m_achievementSectionId]?.name || `章节${ach.m_achievementSectionId}`,
-                sortOrder: ach.m_sortOrder || 0,
-                enabled: ach.m_enabled || 0,
-                name: this.extractLocalizedText(ach.m_name),
-                description: this.extractLocalizedText(ach.m_description),
-                quota: ach.m_quota || 0,
-                points: ach.m_points || 0,
-                rewardTrackId: ach.m_rewardTrackId || 0,
-                raw: ach
-            })),
+            achievements: achievements.map(ach => {
+                const sectionId = ach.m_achievementSectionId;
+                // 通过 SECTION_ITEM 查找对应的子分类
+                const sectionItem = sectionItems.find(item => item.sectionId === sectionId);
+                const subcategoryId = sectionItem?.subcategoryId;
+                const subcategory = subcategoryId ? subcategories[subcategoryId] : null;
+                const categoryId = subcategory?.categoryId;
+                const category = categoryId ? categories[categoryId] : null;
+                const achConditions = conditions[ach.m_ID] || [];
+                
+                return {
+                    id: ach.m_ID,
+                    sectionId: sectionId,
+                    sectionName: sections[sectionId]?.name || `章节${sectionId}`,
+                    subcategoryId: subcategoryId,
+                    subcategoryName: subcategory?.name || '',
+                    categoryId: categoryId,
+                    categoryName: category?.name || '',
+                    sortOrder: ach.m_sortOrder || 0,
+                    enabled: ach.m_enabled || 0,
+                    name: this.extractLocalizedText(ach.m_name),
+                    description: this.extractLocalizedText(ach.m_description),
+                    quota: ach.m_quota || 0,
+                    points: ach.m_points || 0,
+                    rewardTrackId: ach.m_rewardTrackId || 0,
+                    conditions: achConditions,
+                    conditionCount: achConditions.length,
+                    raw: ach
+                };
+            }),
             categories,
-            sections
+            subcategories,
+            sections,
+            sectionItems,
+            conditions
         };
     }
     
@@ -603,12 +736,15 @@ class AchievementSystem {
         const fields = [
             { key: 'name', label: '名称' },
             { key: 'description', label: '描述' },
+            { key: 'categoryName', label: '分类' },
+            { key: 'subcategoryName', label: '子分类' },
+            { key: 'sectionName', label: '章节' },
             { key: 'points', label: '成就点数' },
             { key: 'quota', label: '目标数量' },
             { key: 'enabled', label: '状态', format: v => v ? '启用' : '禁用' },
             { key: 'sortOrder', label: '排序' },
-            { key: 'sectionName', label: '章节' },
-            { key: 'rewardTrackId', label: '奖励轨道ID' }
+            { key: 'rewardTrackId', label: '奖励轨道ID' },
+            { key: 'conditionCount', label: '条件数量' }
         ];
         
         fields.forEach(field => {
@@ -769,20 +905,112 @@ class AchievementSystem {
     
     // 填充过滤器
     populateFilters() {
-        // 填充章节过滤器
-        const sectionFilter = document.getElementById('sectionFilter');
-        const sections = new Set(this.allAchievements.map(a => a.sectionId));
+        this.populateCategoryFilter();
+        this.populateSubcategoryFilter();
+        this.populateSectionFilter();
+    }
+    
+    // 填充分类过滤器
+    populateCategoryFilter() {
+        const categoryFilter = document.getElementById('categoryFilter');
+        const categories = new Map();
         
-        sectionFilter.innerHTML = '<option value="">所有章节</option>';
-        sections.forEach(sectionId => {
-            const section = this.sections[sectionId];
-            if (section) {
-                const option = document.createElement('option');
-                option.value = sectionId;
-                option.textContent = section.name;
-                sectionFilter.appendChild(option);
+        this.allAchievements.forEach(a => {
+            if (a.categoryId && a.categoryName) {
+                categories.set(a.categoryId, a.categoryName);
             }
         });
+        
+        categoryFilter.innerHTML = '<option value="">所有分类</option>';
+        Array.from(categories.entries())
+            .sort((a, b) => a[1].localeCompare(b[1], 'zh-CN'))
+            .forEach(([id, name]) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = name;
+                categoryFilter.appendChild(option);
+            });
+    }
+    
+    // 填充子分类过滤器（根据已选分类过滤）
+    populateSubcategoryFilter() {
+        const categoryId = document.getElementById('categoryFilter').value;
+        const subcategoryFilter = document.getElementById('subcategoryFilter');
+        const subcategories = new Map();
+        
+        this.allAchievements.forEach(a => {
+            // 如果选了分类，只显示该分类下的子分类
+            if (categoryId && a.categoryId != categoryId) return;
+            
+            if (a.subcategoryId && a.subcategoryName) {
+                subcategories.set(a.subcategoryId, {
+                    name: a.subcategoryName,
+                    categoryName: a.categoryName
+                });
+            }
+        });
+        
+        subcategoryFilter.innerHTML = '<option value="">所有子分类</option>';
+        Array.from(subcategories.entries())
+            .sort((a, b) => a[1].name.localeCompare(b[1].name, 'zh-CN'))
+            .forEach(([id, data]) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = data.name;
+                subcategoryFilter.appendChild(option);
+            });
+        
+        // 如果当前选中的子分类不在新列表中，清空选择
+        if (subcategoryFilter.value && !subcategories.has(parseInt(subcategoryFilter.value))) {
+            subcategoryFilter.value = '';
+        }
+    }
+    
+    // 填充章节过滤器（根据已选分类和子分类过滤）
+    populateSectionFilter() {
+        const categoryId = document.getElementById('categoryFilter').value;
+        const subcategoryId = document.getElementById('subcategoryFilter').value;
+        const sectionFilter = document.getElementById('sectionFilter');
+        const sections = new Map();
+        
+        this.allAchievements.forEach(a => {
+            // 如果选了分类，只显示该分类下的章节
+            if (categoryId && a.categoryId != categoryId) return;
+            // 如果选了子分类，只显示该子分类下的章节
+            if (subcategoryId && a.subcategoryId != subcategoryId) return;
+            
+            if (a.sectionId && a.sectionName) {
+                sections.set(a.sectionId, a.sectionName);
+            }
+        });
+        
+        sectionFilter.innerHTML = '<option value="">所有章节</option>';
+        Array.from(sections.entries())
+            .sort((a, b) => a[1].localeCompare(b[1], 'zh-CN'))
+            .forEach(([id, name]) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = name;
+                sectionFilter.appendChild(option);
+            });
+        
+        // 如果当前选中的章节不在新列表中，清空选择
+        if (sectionFilter.value && !sections.has(parseInt(sectionFilter.value))) {
+            sectionFilter.value = '';
+        }
+    }
+    
+    // 分类过滤器变化事件
+    onCategoryFilterChange() {
+        this.populateSubcategoryFilter();
+        this.populateSectionFilter();
+        this.filterAchievements();
+    }
+    
+    // 子分类过滤器变化事件
+    onSubcategoryFilterChange() {
+        this.populateSectionFilter();
+        this.filterAchievements();
     }
     
     // 切换视图
@@ -805,6 +1033,8 @@ class AchievementSystem {
     // 过滤成就
     filterAchievements() {
         const searchText = document.getElementById('searchInput').value.toLowerCase();
+        const categoryFilter = document.getElementById('categoryFilter').value;
+        const subcategoryFilter = document.getElementById('subcategoryFilter').value;
         const sectionFilter = document.getElementById('sectionFilter').value;
         
         this.filteredAchievements = this.allAchievements.filter(ach => {
@@ -812,8 +1042,10 @@ class AchievementSystem {
                 ach.name.toLowerCase().includes(searchText) ||
                 ach.description.toLowerCase().includes(searchText) ||
                 ach.id.toString().includes(searchText);
+            const matchCategory = !categoryFilter || ach.categoryId == categoryFilter;
+            const matchSubcategory = !subcategoryFilter || ach.subcategoryId == subcategoryFilter;
             const matchSection = !sectionFilter || ach.sectionId == sectionFilter;
-            return matchSearch && matchSection;
+            return matchSearch && matchCategory && matchSubcategory && matchSection;
         });
         
         if (this.currentView === 'achievement') {
@@ -838,6 +1070,7 @@ class AchievementSystem {
                     <div class="achievement-name">${ach.name || `成就 ${ach.id}`}</div>
                     ${ach.points > 0 ? `<div class="achievement-badge">${ach.points} 点</div>` : ''}
                 </div>
+                ${ach.categoryName ? `<div class="achievement-category-tag">${ach.categoryName}${ach.subcategoryName ? ' > ' + ach.subcategoryName : ''}</div>` : ''}
                 ${ach.description ? `<div class="achievement-description">${ach.description}</div>` : ''}
                 <div class="achievement-info">
                     <div class="achievement-stat">
@@ -852,6 +1085,12 @@ class AchievementSystem {
                     <div class="achievement-stat">
                         <span class="stat-label">目标:</span>
                         <span class="stat-value">${ach.quota}</span>
+                    </div>
+                    ` : ''}
+                    ${ach.conditionCount > 0 ? `
+                    <div class="achievement-stat">
+                        <span class="stat-label">条件:</span>
+                        <span class="stat-value">${ach.conditionCount}个</span>
                     </div>
                     ` : ''}
                 </div>
@@ -914,6 +1153,16 @@ class AchievementSystem {
                     <div class="info-item">
                         <strong>成就ID:</strong> ${achievement.id}
                     </div>
+                    ${achievement.categoryName ? `
+                    <div class="info-item">
+                        <strong>分类:</strong> ${achievement.categoryName}
+                    </div>
+                    ` : ''}
+                    ${achievement.subcategoryName ? `
+                    <div class="info-item">
+                        <strong>子分类:</strong> ${achievement.subcategoryName}
+                    </div>
+                    ` : ''}
                     <div class="info-item">
                         <strong>章节:</strong> ${achievement.sectionName}
                     </div>
@@ -942,6 +1191,19 @@ class AchievementSystem {
                 <h4>成就描述</h4>
                 <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; line-height: 1.8;">
                     ${achievement.description}
+                </div>
+            </div>
+            ` : ''}
+            
+            ${achievement.conditions && achievement.conditions.length > 0 ? `
+            <div class="achievement-details-info">
+                <h4>完成条件 <span style="color: #667eea;">(${achievement.conditions.length}个)</span></h4>
+                <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    ${achievement.conditions.map((cond, idx) => `
+                        <div style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
+                            <strong>条件 ${idx + 1}:</strong> 场景ID ${cond.scenarioId}
+                        </div>
+                    `).join('')}
                 </div>
             </div>
             ` : ''}
