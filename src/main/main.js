@@ -209,6 +209,7 @@ const createMenu = () => {
 function checkForUpdates(manual = false) {
   console.log('========== 开始检查更新 ==========')
   console.log('当前版本:', app.getVersion())
+  console.log('平台:', process.platform)
   console.log('更新配置:', {
     provider: 'github',
     owner: 'Fbigame',
@@ -216,11 +217,13 @@ function checkForUpdates(manual = false) {
     currentVersion: app.getVersion()
   })
   
-  // 配置更新源 - 使用 GitHub Releases API
+  // 配置更新源 - 使用 GitHub Releases API，配置为使用 Squirrel.Windows 格式
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'Fbigame',
-    repo: 'Zeus'
+    repo: 'Zeus',
+    // 对于 Windows，使用 Squirrel 格式（RELEASES 文件）
+    useMultipleRangeRequest: false
   });
   
   // 禁用自动下载，手动控制

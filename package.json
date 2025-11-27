@@ -13,7 +13,7 @@
     "start-clean": "node electron-start.js",
     "start-no-cache": "electron . --disable-web-security --disable-features=VizDisplayCompositor --no-sandbox --disable-gpu-sandbox --disable-dev-shm-usage",
     "package": "electron-forge package",
-    "make": "electron-forge make",
+    "make": "electron-forge make && node generate-latest-yml.js",
     "publish": "electron-forge publish",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

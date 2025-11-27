@@ -1,0 +1,8 @@
+version: 1.0.5
+files:
+  - url: HearthstoneClientTool-1.0.5-full.nupkg
+    sha512: PLACEHOLDER_HASH
+    size: 0
+path: HearthstoneClientTool-1.0.5-full.nupkg
+sha512: PLACEHOLDER_HASH
+releaseDate: '2025-11-27T00:00:00.000Z'
