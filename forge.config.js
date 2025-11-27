@@ -26,8 +26,10 @@ module.exports = {
         // 应用显示名称
         name: 'HearthstoneClientTool',
         title: 'Hearthstone Client Tool',
+        // 快捷方式名称（带空格）
+        shortcutName: 'Hearthstone Client Tool',
         // 安装程序可执行文件名
-        setupExe: 'HearthstoneClientToolSetup.exe',
+        setupExe: 'Hearthstone-Client-Tool-Setup.exe',
         // 应用图标（显示在控制面板和快捷方式）
         iconUrl: 'https://raw.githubusercontent.com/Fbigame/Zeus/main/assets/icon.ico',
         // 不静默安装

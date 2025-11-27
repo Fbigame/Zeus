@@ -1,7 +1,7 @@
 {
   "name": "heathstone-client-tool",
-  "productName": "Hearthstone Client Tool",
-  "version": "1.0.9",
+  "productName": "HearthstoneClientTool",
+  "version": "1.1.0",
   "main": "src/main/main.js",
   "repository": {
     "type": "git",
@@ -13,8 +13,9 @@
     "start-clean": "node electron-start.js",
     "start-no-cache": "electron . --disable-web-security --disable-features=VizDisplayCompositor --no-sandbox --disable-gpu-sandbox --disable-dev-shm-usage",
     "package": "electron-forge package",
-    "make": "electron-forge make && node generate-latest-yml.js",
-    "publish": "electron-forge publish",
+    "make": "electron-builder --win --x64",
+    "dist": "electron-builder --win --x64",
+    "publish": "electron-builder --win --x64 --publish always",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Fbigame",
@@ -30,11 +31,53 @@
     "@electron-forge/plugin-fuses": "^7.10.2",
     "@electron-forge/publisher-github": "^7.10.2",
     "@electron/fuses": "^1.8.0",
-    "electron": "^39.0.0"
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.12"
   },
   "dependencies": {
     "electron-log": "^5.4.3",
     "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.6.2"
+  },
+  "build": {
+    "appId": "com.fbigame.hearthstoneclienttool",
+    "productName": "Hearthstone Client Tool",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "config/**/*",
+      "package.json",
+      "README.md"
+    ],
+    "asar": true,
+    "extraResources": [],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Fbigame",
+        "repo": "Zeus"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Hearthstone Client Tool",
+      "artifactName": "${productName}-${version}-Setup.${ext}"
+    }
   }
 }

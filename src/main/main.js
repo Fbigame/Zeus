@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const path = require('path')
 const fs = require('fs').promises
 const { autoUpdater } = require('electron-updater')
+const { spawn } = require('child_process')
 
 // 处理 Squirrel 安装/卸载/更新事件
 // 这样可以正确处理 Windows 应用列表中的卸载操作
@@ -11,7 +12,7 @@ if (require('electron-squirrel-startup')) {
 
 // 配置自动更新
 autoUpdater.autoDownload = false
-autoUpdater.autoInstallOnAppQuit = true
+autoUpdater.autoInstallOnAppQuit = false
 
 // 配置更新日志
 autoUpdater.logger = require('electron-log')
@@ -379,10 +380,12 @@ ipcMain.handle('download-update', async () => {
 // IPC 处理器 - 安装更新
 ipcMain.handle('install-update', async () => {
   try {
-    // 对于 Squirrel.Windows，需要强制退出并安装
-    // isSilent = false: 不静默安装，显示安装界面
-    // isForceRunAfter = true: 安装完成后重新启动应用
-    autoUpdater.quitAndInstall(false, true)
+    // 使用 setImmediate 确保响应先发送给渲染进程
+    setImmediate(() => {
+      // quitAndInstall 会立即退出应用并安装更新
+      // 参数: isSilent, isForceRunAfter
+      autoUpdater.quitAndInstall(false, true)
+    })
     return { success: true }
   } catch (error) {
     return { success: false, error: error.message }
