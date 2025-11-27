@@ -539,7 +539,9 @@ class DeckRulesetSystem {
                                 ` : ''}
                                 ${rule.tagId ? `
                                     <div class="rule-detail-item">
-                                        <strong>标签ID:</strong> ${rule.tagId} (${rule.tagMinValue} - ${rule.tagMaxValue})
+                                        <strong>标签:</strong> ${window.formatGameTag ? window.formatGameTag(rule.tagId) : rule.tagId}
+                                        <br>
+                                        <strong>标签范围:</strong> ${rule.tagMinValue} - ${rule.tagMaxValue}
                                     </div>
                                 ` : ''}
                                 ${rule.stringValue ? `
@@ -554,7 +556,9 @@ class DeckRulesetSystem {
                                 ` : ''}
                                 ${rule.subsets.length > 0 ? `
                                     <div class="rule-detail-item">
-                                        <strong>关联子集:</strong> ${rule.subsets.join(', ')}
+                                        <strong>关联子集:</strong> ${rule.subsets.map(subsetId => 
+                                            `<a href="#" class="subset-link" onclick="rulesetSystem.showSubsetDetails(${subsetId}); return false;">${subsetId}</a>`
+                                        ).join(', ')}
                                     </div>
                                 ` : ''}
                                 <div class="rule-detail-item">
@@ -620,7 +624,7 @@ class DeckRulesetSystem {
                                     </div>
                                     ${rule.m_tagId !== undefined ? `
                                         <div class="rule-detail-item">
-                                            <strong>标签ID:</strong> ${rule.m_tagId}
+                                            <strong>标签:</strong> ${window.formatGameTag ? window.formatGameTag(rule.m_tagId) : rule.m_tagId}
                                         </div>
                                     ` : ''}
                                     ${rule.m_minValue !== undefined || rule.m_maxValue !== undefined ? `
