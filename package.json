@@ -36,7 +36,6 @@
   },
   "dependencies": {
     "electron-log": "^5.4.3",
-    "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.6.2"
   },
   "build": {
@@ -54,7 +53,6 @@
       "README.md"
     ],
     "asar": true,
-    "extraResources": [],
     "publish": [
       {
         "provider": "github",

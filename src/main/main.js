@@ -4,12 +4,6 @@ const fs = require('fs').promises
 const { autoUpdater } = require('electron-updater')
 const { spawn } = require('child_process')
 
-// 处理 Squirrel 安装/卸载/更新事件
-// 这样可以正确处理 Windows 应用列表中的卸载操作
-if (require('electron-squirrel-startup')) {
-  app.quit();
-}
-
 // 配置自动更新
 autoUpdater.autoDownload = false
 autoUpdater.autoInstallOnAppQuit = false
@@ -218,13 +212,11 @@ function checkForUpdates(manual = false) {
     currentVersion: app.getVersion()
   })
   
-  // 配置更新源 - 使用 GitHub Releases API，配置为使用 Squirrel.Windows 格式
+  // 配置更新源 - 使用 GitHub Releases API，NSIS 格式
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'Fbigame',
-    repo: 'Zeus',
-    // 对于 Windows，使用 Squirrel 格式（RELEASES 文件）
-    useMultipleRangeRequest: false
+    repo: 'Zeus'
   });
   
   // 禁用自动下载，手动控制
