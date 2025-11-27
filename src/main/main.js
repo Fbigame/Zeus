@@ -386,6 +386,15 @@ ipcMain.handle('install-update', async () => {
   }
 })
 
+// IPC 处理器 - 获取应用版本
+ipcMain.handle('get-app-version', async () => {
+  try {
+    return { success: true, version: app.getVersion() }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+})
+
 // IPC 处理器 - 获取用户数据路径
 ipcMain.handle('get-user-data-path', async () => {
   try {

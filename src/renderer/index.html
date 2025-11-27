@@ -694,7 +694,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🃏 炉石传说数据工具</h1>
+        <h1>🃏 炉石传说数据工具 <span id="appVersion" style="font-size: 0.5em; color: #7f8c8d; font-weight: normal;"></span></h1>
 
         <!-- 功能选择区域 -->
         <section id="featureSelectionSection" class="feature-selection-section">
@@ -884,15 +884,24 @@
             });
         }
         
-        // 页面加载时获取并显示数据目录路径
+        // 页面加载时获取并显示数据目录路径和版本号
         document.addEventListener('DOMContentLoaded', async () => {
             try {
+                // 获取数据目录路径
                 const result = await window.fileAPI.getDefaultDataPath();
                 if (result.success) {
                     document.getElementById('dataDirPath').textContent = result.path;
                 }
+                
+                // 获取应用版本号
+                if (window.updateAPI) {
+                    const versionResult = await window.updateAPI.getAppVersion();
+                    if (versionResult.success) {
+                        document.getElementById('appVersion').textContent = `v${versionResult.version}`;
+                    }
+                }
             } catch (error) {
-                console.error('获取数据目录路径失败:', error);
+                console.error('初始化失败:', error);
             }
         });
         

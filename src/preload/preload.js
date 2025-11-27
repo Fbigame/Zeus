@@ -30,6 +30,8 @@ contextBridge.exposeInMainWorld('updateAPI', {
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   // 安装更新
   installUpdate: () => ipcRenderer.invoke('install-update'),
+  // 获取应用版本
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   
   // 监听更新事件
   onCheckingForUpdate: (callback) => ipcRenderer.on('checking-for-update', callback),
