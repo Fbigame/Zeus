@@ -17,6 +17,16 @@ autoUpdater.autoInstallOnAppQuit = true
 autoUpdater.logger = require('electron-log')
 autoUpdater.logger.transports.file.level = 'info'
 
+// 允许开发环境检查更新（用于测试）
+if (!app.isPackaged) {
+  Object.defineProperty(app, 'isPackaged', {
+    get() {
+      return true;
+    }
+  });
+  console.log('开发环境：强制启用更新检查')
+}
+
 // 检测并配置代理
 function configureProxy() {
   const https = require('https')
