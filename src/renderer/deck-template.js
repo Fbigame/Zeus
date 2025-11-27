@@ -6,6 +6,7 @@ class DeckTemplateSystem {
         this.dataPath = './data';
         this.allDecks = [];
         this.filteredDecks = [];
+        this.currentVersion = null; // 当前加载的版本
         this.cardNameMap = new Map(); // 卡牌ID到名称的映射
         this.classNames = {}; // 职业ID到名称的映射
         this.classHeroIds = {}; // 职业ID到默认英雄ID的映射
@@ -351,21 +352,30 @@ class DeckTemplateSystem {
     
     // 检查版本文件
     async checkVersionFiles(version) {
-        const deckTemplatePath = `data/${version}/DECK_TEMPLATE.json`;
-        const deckPath = `data/${version}/DECK.json`;
-        const deckCardPath = `data/${version}/DECK_CARD.json`;
-        
         try {
-            const [templateResult, deckResult, cardResult] = await Promise.all([
-                window.fileAPI.readFile(deckTemplatePath),
-                window.fileAPI.readFile(deckPath),
-                window.fileAPI.readFile(deckCardPath)
-            ]);
+            // 设置 DataManager 版本
+            window.dataManager.setVersion(version);
             
+            // 尝试加载必要文件来验证
             const missingFiles = [];
-            if (!templateResult.success) missingFiles.push('DECK_TEMPLATE.json');
-            if (!deckResult.success) missingFiles.push('DECK.json');
-            if (!cardResult.success) missingFiles.push('DECK_CARD.json');
+            
+            try {
+                await window.dataManager.loadFile('DECK_TEMPLATE', version);
+            } catch (error) {
+                missingFiles.push('DECK_TEMPLATE.json');
+            }
+            
+            try {
+                await window.dataManager.loadFile('DECK', version);
+            } catch (error) {
+                missingFiles.push('DECK.json');
+            }
+            
+            try {
+                await window.dataManager.loadFile('DECK_CARD', version);
+            } catch (error) {
+                missingFiles.push('DECK_CARD.json');
+            }
             
             const isValid = missingFiles.length === 0;
             
@@ -401,6 +411,12 @@ class DeckTemplateSystem {
         const version = document.getElementById('versionSelect').value;
         
         console.log('🚀 开始加载套牌:', version);
+        
+        // 保存当前版本
+        this.currentVersion = version;
+        
+        // 设置 DataManager 版本
+        window.dataManager.setVersion(version);
         
         try {
             this.showProgressSection();
@@ -450,50 +466,42 @@ class DeckTemplateSystem {
     
     // 加载套牌模板
     async loadDeckTemplates(version) {
-        const filePath = `data/${version}/DECK_TEMPLATE.json`;
-        const result = await window.fileAPI.readFile(filePath);
-        
-        if (!result.success) {
-            throw new Error(`无法读取 DECK_TEMPLATE.json: ${result.error}`);
+        const data = await window.dataManager.loadFile('DECK_TEMPLATE', version);
+        if (!data) {
+            throw new Error('无法读取 DECK_TEMPLATE.json');
         }
-        
-        const data = JSON.parse(result.data);
         return data.Records || [];
     }
     
     // 加载套牌信息
     async loadDeckInfo(version) {
-        const filePath = `data/${version}/DECK.json`;
-        const result = await window.fileAPI.readFile(filePath);
-        
-        if (!result.success) {
-            throw new Error(`无法读取 DECK.json: ${result.error}`);
+        const data = await window.dataManager.loadFile('DECK', version);
+        if (!data) {
+            throw new Error('无法读取 DECK.json');
         }
-        
-        const data = JSON.parse(result.data);
         return data.Records || [];
     }
     
     // 加载卡牌信息
     async loadDeckCards(version) {
-        const filePath = `data/${version}/DECK_CARD.json`;
-        const result = await window.fileAPI.readFile(filePath);
-        
-        if (!result.success) {
-            throw new Error(`无法读取 DECK_CARD.json: ${result.error}`);
+        const data = await window.dataManager.loadFile('DECK_CARD', version);
+        if (!data) {
+            throw new Error('无法读取 DECK_CARD.json');
         }
-        
-        const data = JSON.parse(result.data);
         return data.Records || [];
     }
     
     // 加载职业信息
     async loadClassInfo(version) {
-        const filePath = `data/${version}/CLASS.json`;
-        const result = await window.fileAPI.readFile(filePath);
+        let data = null;
         
-        if (!result.success) {
+        try {
+            data = await window.dataManager.loadFile('CLASS', version);
+        } catch (error) {
             console.warn('无法读取 CLASS.json，使用默认职业信息');
+        }
+        
+        if (!data) {
             // 使用默认值
             this.classNames = {
                 1: '死亡骑士', 2: '德鲁伊', 3: '猎人', 4: '法师',
@@ -506,8 +514,6 @@ class DeckTemplateSystem {
             };
             return;
         }
-        
-        const data = JSON.parse(result.data);
         const classes = data.Records || [];
         
         // 创建职业映射
@@ -528,15 +534,14 @@ class DeckTemplateSystem {
     
     // 加载卡牌名称
     async loadCardNames(version) {
-        const filePath = `data/${version}/CARD.json`;
-        const result = await window.fileAPI.readFile(filePath);
+        let data = null;
         
-        if (!result.success) {
+        try {
+            data = await window.dataManager.loadFile('CARD', version);
+        } catch (error) {
             console.warn('无法读取 CARD.json，卡牌名称将不可用');
             return;
         }
-        
-        const data = JSON.parse(result.data);
         const cards = data.Records || [];
         
         // 创建卡牌ID到名称的映射
@@ -555,15 +560,14 @@ class DeckTemplateSystem {
     
     // 加载卡牌标签（费用等信息）
     async loadCardTags(version) {
-        const filePath = `data/${version}/CARD_TAG.json`;
-        const result = await window.fileAPI.readFile(filePath);
+        let data = null;
         
-        if (!result.success) {
+        try {
+            data = await window.dataManager.loadFile('CARD_TAG', version);
+        } catch (error) {
             console.warn('无法读取 CARD_TAG.json，卡牌费用将不可用');
             return;
         }
-        
-        const data = JSON.parse(result.data);
         const tags = data.Records || [];
         
         // 创建卡牌ID到费用和SIDEBOARD_TYPE的映射
@@ -609,15 +613,14 @@ class DeckTemplateSystem {
     
     // 加载备牌信息
     async loadSideboardCards(version) {
-        const filePath = `data/${version}/SIDEBOARD_CARD.json`;
-        const result = await window.fileAPI.readFile(filePath);
+        let data = null;
         
-        if (!result.success) {
+        try {
+            data = await window.dataManager.loadFile('SIDEBOARD_CARD', version);
+        } catch (error) {
             console.warn('无法读取 SIDEBOARD_CARD.json，备牌信息将不可用');
             return;
         }
-        
-        const data = JSON.parse(result.data);
         const sideboardCards = data.Records || [];
         
         // 创建 deckCardId 到 sideboardCardId数组 的映射（一个卡可能有多个备牌）

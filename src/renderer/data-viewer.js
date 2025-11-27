@@ -189,14 +189,14 @@ class DataViewerSystem {
         if (!version || !file) return;
         
         try {
-            const filePath = `data/${version}/${file}.json`;
-            const result = await window.fileAPI.readFile(filePath);
+            // 使用 DataManager 加载
+            window.dataManager.setVersion(version);
+            const jsonData = await window.dataManager.loadFile(file, version);
             
-            if (!result.success) {
-                throw new Error(`无法读取文件: ${result.error}`);
+            if (!jsonData) {
+                throw new Error('无法加载数据文件');
             }
             
-            const jsonData = JSON.parse(result.data);
             const records = jsonData.Records || [];
             
             // 按 m_ID 排序（如果存在 m_ID 字段）

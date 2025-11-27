@@ -256,21 +256,30 @@ class DeckRulesetSystem {
     }
     
     async checkVersionFiles(version) {
-        const rulesetPath = `data/${version}/DECK_RULESET.json`;
-        const rulePath = `data/${version}/DECK_RULESET_RULE.json`;
-        const subsetPath = `data/${version}/DECK_RULESET_RULE_SUBSET.json`;
-        
         try {
-            const [rulesetResult, ruleResult, subsetResult] = await Promise.all([
-                window.fileAPI.readFile(rulesetPath),
-                window.fileAPI.readFile(rulePath),
-                window.fileAPI.readFile(subsetPath)
-            ]);
+            // 设置 DataManager 版本
+            window.dataManager.setVersion(version);
             
+            // 尝试加载必要文件来验证
             const missingFiles = [];
-            if (!rulesetResult.success) missingFiles.push('DECK_RULESET.json');
-            if (!ruleResult.success) missingFiles.push('DECK_RULESET_RULE.json');
-            if (!subsetResult.success) missingFiles.push('DECK_RULESET_RULE_SUBSET.json');
+            
+            try {
+                await window.dataManager.loadFile('DECK_RULESET', version);
+            } catch (error) {
+                missingFiles.push('DECK_RULESET.json');
+            }
+            
+            try {
+                await window.dataManager.loadFile('DECK_RULESET_RULE', version);
+            } catch (error) {
+                missingFiles.push('DECK_RULESET_RULE.json');
+            }
+            
+            try {
+                await window.dataManager.loadFile('DECK_RULESET_RULE_SUBSET', version);
+            } catch (error) {
+                missingFiles.push('DECK_RULESET_RULE_SUBSET.json');
+            }
             
             const isValid = missingFiles.length === 0;
             
@@ -304,6 +313,9 @@ class DeckRulesetSystem {
     async loadRulesets() {
         const version = document.getElementById('versionSelect').value;
         console.log('🚀 开始加载规则集:', version);
+        
+        // 设置 DataManager 版本
+        window.dataManager.setVersion(version);
         
         try {
             this.showProgressSection();
@@ -340,74 +352,60 @@ class DeckRulesetSystem {
     }
     
     async loadDeckRulesets(version) {
-        const filePath = `data/${version}/DECK_RULESET.json`;
-        const result = await window.fileAPI.readFile(filePath);
-        
-        if (!result.success) {
-            throw new Error(`无法读取 DECK_RULESET.json: ${result.error}`);
+        const data = await window.dataManager.loadFile('DECK_RULESET', version);
+        if (!data) {
+            throw new Error('无法读取 DECK_RULESET.json');
         }
-        
-        const data = JSON.parse(result.data);
         return data.Records || [];
     }
     
     async loadRulesetRules(version) {
-        const filePath = `data/${version}/DECK_RULESET_RULE.json`;
-        const result = await window.fileAPI.readFile(filePath);
-        
-        if (!result.success) {
-            throw new Error(`无法读取 DECK_RULESET_RULE.json: ${result.error}`);
+        const data = await window.dataManager.loadFile('DECK_RULESET_RULE', version);
+        if (!data) {
+            throw new Error('无法读取 DECK_RULESET_RULE.json');
         }
-        
-        const data = JSON.parse(result.data);
         return data.Records || [];
     }
     
     async loadSubsets(version) {
         // 加载 SUBSET.json
-        const subsetPath = `data/${version}/SUBSET.json`;
-        const subsetResult = await window.fileAPI.readFile(subsetPath);
-        
-        if (subsetResult.success) {
-            const data = JSON.parse(subsetResult.data);
-            if (data.Records) {
-                data.Records.forEach(record => {
-                    this.subsets[record.m_ID] = record;
-                });
-            }
-        } else {
+        let subsetData = null;
+        try {
+            subsetData = await window.dataManager.loadFile('SUBSET', version);
+        } catch (error) {
             console.warn('未能加载子集定义数据，子集详情功能可能不可用');
         }
         
-        // 加载 SUBSET_RULE.json
-        const subsetRulePath = `data/${version}/SUBSET_RULE.json`;
-        const subsetRuleResult = await window.fileAPI.readFile(subsetRulePath);
+        if (subsetData && subsetData.Records) {
+            subsetData.Records.forEach(record => {
+                this.subsets[record.m_ID] = record;
+            });
+        }
         
-        if (subsetRuleResult.success) {
-            const data = JSON.parse(subsetRuleResult.data);
-            if (data.Records) {
-                data.Records.forEach(record => {
-                    if (!this.subsetRules[record.m_subsetId]) {
-                        this.subsetRules[record.m_subsetId] = [];
-                    }
-                    this.subsetRules[record.m_subsetId].push(record);
-                });
-                console.log(`✅ 加载了 ${data.Records.length} 条子集规则`);
-            }
-        } else {
+        // 加载 SUBSET_RULE.json
+        let subsetRuleData = null;
+        try {
+            subsetRuleData = await window.dataManager.loadFile('SUBSET_RULE', version);
+        } catch (error) {
             console.warn('未能加载子集规则数据');
+        }
+        
+        if (subsetRuleData && subsetRuleData.Records) {
+            subsetRuleData.Records.forEach(record => {
+                if (!this.subsetRules[record.m_subsetId]) {
+                    this.subsetRules[record.m_subsetId] = [];
+                }
+                this.subsetRules[record.m_subsetId].push(record);
+            });
+            console.log(`✅ 加载了 ${subsetRuleData.Records.length} 条子集规则`);
         }
     }
     
     async loadRulesetRuleSubsets(version) {
-        const filePath = `data/${version}/DECK_RULESET_RULE_SUBSET.json`;
-        const result = await window.fileAPI.readFile(filePath);
-        
-        if (!result.success) {
-            throw new Error(`无法读取 DECK_RULESET_RULE_SUBSET.json: ${result.error}`);
+        const data = await window.dataManager.loadFile('DECK_RULESET_RULE_SUBSET', version);
+        if (!data) {
+            throw new Error('无法读取 DECK_RULESET_RULE_SUBSET.json');
         }
-        
-        const data = JSON.parse(result.data);
         return data.Records || [];
     }
     

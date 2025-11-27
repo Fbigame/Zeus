@@ -246,24 +246,22 @@ class VersionCompareSystem {
             return false;
         }
         
-        // 检测必要文件是否存在
-        const cardPath = `./data/${version}/CARD.json`;
-        const tagPath = `./data/${version}/CARD_TAG.json`;
+        // 设置 DataManager 版本
+        window.dataManager.setVersion(version);
         
         try {
-            const [cardResult, tagResult] = await Promise.all([
-                window.fileAPI.readFile(cardPath),
-                window.fileAPI.readFile(tagPath)
-            ]);
-            
-            let status = '';
-            let statusClass = '';
+            // 尝试加载必要文件来验证
             const missingFiles = [];
             
-            if (!cardResult.success) {
+            try {
+                await window.dataManager.loadFile('CARD', version);
+            } catch (error) {
                 missingFiles.push('CARD.json');
             }
-            if (!tagResult.success) {
+            
+            try {
+                await window.dataManager.loadFile('CARD_TAG', version);
+            } catch (error) {
                 missingFiles.push('CARD_TAG.json');
             }
             
@@ -376,30 +374,16 @@ class VersionCompareSystem {
         console.log(`📂 开始加载版本 ${version} 的数据`);
         
         try {
-            // 使用简单的相对路径，让主进程处理实际路径转换
-            const cardPath = `data/${version}/CARD.json`;
-            const tagPath = `data/${version}/CARD_TAG.json`;
-            
-            console.log(`🔍 尝试加载文件:`, { cardPath, tagPath });
-            
-            // 使用IPC调用来读取文件，而不是fetch
-            const [cardResult, tagResult] = await Promise.all([
-                window.fileAPI.readFile(cardPath),
-                window.fileAPI.readFile(tagPath)
+            // 使用 DataManager 加载
+            console.log(`📦 使用 DataManager 加载版本 ${version}`);
+            const [cardData, tagData] = await Promise.all([
+                window.dataManager.loadFile('CARD', version),
+                window.dataManager.loadFile('CARD_TAG', version)
             ]);
             
-            console.log(`📥 文件读取结果:`, {
-                cardSuccess: cardResult.success,
-                tagSuccess: tagResult.success
-            });
-            
-            if (!cardResult.success || !tagResult.success) {
-                throw new Error(`无法加载版本 ${version} 的数据文件 - CARD: ${cardResult.success ? 'OK' : cardResult.error}, TAG: ${tagResult.success ? 'OK' : tagResult.error}`);
+            if (!cardData || !tagData) {
+                throw new Error(`无法加载版本 ${version} 的数据文件`);
             }
-            
-            console.log(`⏳ 开始解析JSON数据...`);
-            const cardData = JSON.parse(cardResult.data);
-            const tagData = JSON.parse(tagResult.data);
             
             console.log(`📊 原始数据统计:`, {
                 cardDataKeys: Object.keys(cardData),

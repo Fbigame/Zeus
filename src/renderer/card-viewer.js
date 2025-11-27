@@ -139,41 +139,32 @@ class CardViewer {
         const progressText = document.getElementById('progressText');
 
         try {
+            // 设置 DataManager 版本
+            window.dataManager.setVersion(this.currentVersion);
+            
             progressText.textContent = '正在加载卡牌数据...';
             progressFill.style.width = '20%';
 
-            const cardPath = `data/${this.currentVersion}/CARD.json`;
-            const tagPath = `data/${this.currentVersion}/CARD_TAG.json`;
-            const cardSetTimingPath = `data/${this.currentVersion}/CARD_SET_TIMING.json`;
-            const eventMapPath = `data/${this.currentVersion}/EventMap.json`;
-
-            const [cardResult, tagResult, cardSetTimingResult, eventMapResult] = await Promise.all([
-                window.fileAPI.readFile(cardPath),
-                window.fileAPI.readFile(tagPath),
-                window.fileAPI.readFile(cardSetTimingPath),
-                window.fileAPI.readFile(eventMapPath)
+            // 使用 DataManager 加载
+            const [cardData, tagData, cardSetTimingData, eventMapData] = await Promise.all([
+                window.dataManager.loadFile('CARD', this.currentVersion),
+                window.dataManager.loadFile('CARD_TAG', this.currentVersion),
+                window.dataManager.loadFile('CARD_SET_TIMING', this.currentVersion).catch(() => null),
+                window.dataManager.loadFile('EventMap', this.currentVersion).catch(() => null)
             ]);
-
-            if (!cardResult.success || !tagResult.success) {
+            
+            if (!cardData || !tagData) {
                 throw new Error('无法加载数据文件');
             }
-
-            progressText.textContent = '正在解析数据...';
-            progressFill.style.width = '40%';
-
-            const cardData = JSON.parse(cardResult.data);
-            const tagData = JSON.parse(tagResult.data);
             
-            // 解析扩展包时序数据和事件映射
-            let cardSetTimingData = null;
-            let eventMapData = null;
-            if (cardSetTimingResult.success && eventMapResult.success) {
-                cardSetTimingData = JSON.parse(cardSetTimingResult.data);
-                eventMapData = JSON.parse(eventMapResult.data);
+            if (cardSetTimingData && eventMapData) {
                 console.log('扩展包时序数据结构:', Object.keys(cardSetTimingData));
                 console.log('事件映射数据结构:', Object.keys(eventMapData));
                 console.log('EventMap 完整数据:', eventMapData);
             }
+
+            progressText.textContent = '正在解析数据...';
+            progressFill.style.width = '40%';
 
             console.log('卡牌数据结构:', Object.keys(cardData));
             console.log('标签数据结构:', Object.keys(tagData));

@@ -68,99 +68,52 @@ class CardDetailModal {
             // 尝试从 cardViewer 获取
             if (window.cardViewer && window.cardViewer.currentVersion) {
                 version = window.cardViewer.currentVersion;
+                console.log(`📍 从 cardViewer 获取版本: ${version}`);
             }
             // 尝试从 deckSystem 获取
-            else if (window.deckSystem && document.getElementById('versionSelect')) {
-                version = document.getElementById('versionSelect').value;
+            else if (document.getElementById('versionSelect')) {
+                const versionSelect = document.getElementById('versionSelect').value;
+                if (versionSelect && versionSelect.trim()) {
+                    version = versionSelect;
+                    console.log(`📍 从 versionSelect 获取版本: ${version}`);
+                }
             }
-            // 尝试从 dataManager 获取
-            else if (window.dataManager) {
-                version = window.dataManager.getVersion();
+            // 尝试从 dataManager 获取当前版本
+            if (!version && window.dataManager) {
+                const dmVersion = window.dataManager.getVersion();
+                if (dmVersion) {
+                    version = dmVersion;
+                    console.log(`📍 从 dataManager 获取版本: ${version}`);
+                }
             }
         }
         
-        if (!version) {
-            throw new Error('无法确定数据版本');
+        if (!version || version === 'undefined' || version === '') {
+            console.error('❌ 无法确定数据版本');
+            console.error('调试信息:', {
+                cardViewer: window.cardViewer?.currentVersion,
+                versionSelect: document.getElementById('versionSelect')?.value,
+                dataManager: window.dataManager?.getVersion()
+            });
+            throw new Error('无法确定数据版本，请先选择版本');
         }
+        
+        console.log(`📦 加载卡牌数据 (卡牌ID: ${cardId}, 版本: ${version})`);
         
         // 使用全局数据管理器加载数据
-        if (window.dataManager) {
-            console.log(`使用 DataManager 加载卡牌数据 (版本: ${version})`);
-            
-            // 设置版本
-            if (window.dataManager.getVersion() !== version) {
-                window.dataManager.setVersion(version);
-            }
-            
-            // 加载数据
-            const [cardData, tagData] = await Promise.all([
-                window.dataManager.loadFile('CARD', version),
-                window.dataManager.loadFile('CARD_TAG', version)
-            ]);
-            
-            const cards = cardData.Records || [];
-            const tags = tagData.Records || [];
-            
-            // 查找卡牌
-            const card = cards.find(c => (c.m_ID || c.ID) === cardId);
-            
-            if (!card) {
-                throw new Error('未找到卡牌数据');
-            }
-            
-            // 构建卡牌标签映射
-            const cardTags = {};
-            tags.forEach(tag => {
-                const cId = tag.m_cardId || tag.cardId;
-                const tagId = tag.m_tagId || tag.tagId;
-                const tagValue = tag.m_tagValue || tag.tagValue;
-                if (cId === cardId) {
-                    cardTags[tagId] = tagValue;
-                }
-            });
-            
-            return {
-                id: card.m_ID || card.ID,
-                cardId: card.m_noteMiniGuid || '',
-                name: this.extractLocalizedText(card.m_name) || `卡牌 ${cardId}`,
-                text: this.extractLocalizedText(card.m_textInHand),
-                flavorText: this.extractLocalizedText(card.m_flavorText),
-                cardSetId: card.m_cardSetId || card.cardSetId || 0,
-                artistName: card.m_artistName || card.artistName || '',
-                tags: cardTags,
-                rawData: card
-            };
-        }
+        window.dataManager.setVersion(version);
         
-        // 如果没有 dataManager，使用原有的缓存机制（向后兼容）
-        // 如果版本变化或首次加载，重新加载数据
-        if (!this.cachedCards || !this.cachedCardTags || this.cachedVersion !== version) {
-            console.log(`加载卡牌数据 (版本: ${version})...`);
-            
-            // 加载 CARD 数据
-            const cardPath = `data/${version}/CARD.json`;
-            const cardResult = await window.fileAPI.readFile(cardPath);
-            if (!cardResult.success) {
-                throw new Error('无法读取 CARD.json');
-            }
-            const cardData = JSON.parse(cardResult.data);
-            this.cachedCards = cardData.Records || [];
-            
-            // 加载 CARD_TAG 数据
-            const tagPath = `data/${version}/CARD_TAG.json`;
-            const tagResult = await window.fileAPI.readFile(tagPath);
-            if (!tagResult.success) {
-                throw new Error('无法读取 CARD_TAG.json');
-            }
-            const tagData = JSON.parse(tagResult.data);
-            this.cachedCardTags = tagData.Records || [];
-            
-            this.cachedVersion = version;
-            console.log(`卡牌数据加载完成 (${this.cachedCards.length} 张卡牌, ${this.cachedCardTags.length} 个标签)`);
-        }
+        // 加载数据
+        const [cardData, tagData] = await Promise.all([
+            window.dataManager.loadFile('CARD', version),
+            window.dataManager.loadFile('CARD_TAG', version)
+        ]);
         
-        // 从缓存中查找卡牌
-        const card = this.cachedCards.find(c => (c.m_ID || c.ID) === cardId);
+        const cards = cardData.Records || [];
+        const tags = tagData.Records || [];
+        
+        // 查找卡牌
+        const card = cards.find(c => (c.m_ID || c.ID) === cardId);
         
         if (!card) {
             throw new Error('未找到卡牌数据');
@@ -168,7 +121,7 @@ class CardDetailModal {
         
         // 构建卡牌标签映射
         const cardTags = {};
-        this.cachedCardTags.forEach(tag => {
+        tags.forEach(tag => {
             const cId = tag.m_cardId || tag.cardId;
             const tagId = tag.m_tagId || tag.tagId;
             const tagValue = tag.m_tagValue || tag.tagValue;

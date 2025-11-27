@@ -6,28 +6,14 @@ class DataManager {
         // 当前版本
         this.currentVersion = null;
         
-        // 数据缓存
-        this.cache = {
-            CARD: null,              // 卡牌数据
-            CARD_TAG: null,          // 卡牌标签数据
-            DECK_TEMPLATE: null,     // 套牌模板数据
-            DECK: null,              // 套牌数据
-            DECK_CARD: null,         // 套牌卡牌数据
-            CLASS: null,             // 职业数据
-            SIDEBOARD_CARD: null,    // 备牌数据
-            CARD_SET_TIMING: null,   // 卡牌集时间数据
-            EventMap: null,          // 事件映射数据
-            DECK_RULESET: null,      // 套牌规则集数据
-            DECK_RULESET_RULE: null, // 套牌规则集规则数据
-            DECK_RULESET_RULE_SUBSET: null, // 套牌规则集规则子集数据
-            SUBSET: null,            // 子集数据
-            SUBSET_RULE: null        // 子集规则数据
-        };
+        // 多版本数据缓存：{ 'version:fileName': data }
+        // 例如：{ '34.0.2.231191:CARD': {...}, '34.0.0.220000:CARD': {...} }
+        this.cache = new Map();
         
-        // 加载状态
-        this.loadingPromises = {};
+        // 加载状态：{ 'version:fileName': Promise }
+        this.loadingPromises = new Map();
         
-        console.log('📦 DataManager 初始化完成');
+        console.log('📦 DataManager 初始化完成 (多版本缓存模式)');
     }
     
     /**
@@ -38,7 +24,7 @@ class DataManager {
         if (this.currentVersion !== version) {
             console.log(`🔄 切换版本: ${this.currentVersion} -> ${version}`);
             this.currentVersion = version;
-            this.clearCache();
+            // 不再清除缓存，保留所有版本的数据
         }
     }
     
@@ -51,24 +37,80 @@ class DataManager {
     }
     
     /**
+     * 生成缓存 key
+     * @private
+     */
+    _getCacheKey(fileName, version) {
+        return `${version}:${fileName}`;
+    }
+    
+    /**
      * 清除所有缓存
      */
     clearCache() {
         console.log('🗑️ 清除所有数据缓存');
-        Object.keys(this.cache).forEach(key => {
-            this.cache[key] = null;
-        });
-        this.loadingPromises = {};
+        this.cache.clear();
+        this.loadingPromises.clear();
     }
     
     /**
-     * 清除特定文件的缓存
+     * 清除特定版本的所有缓存
+     * @param {string} version - 版本号
+     */
+    clearVersionCache(version) {
+        console.log(`🗑️ 清除版本缓存: ${version}`);
+        const keysToDelete = [];
+        
+        // 查找该版本的所有缓存
+        for (const key of this.cache.keys()) {
+            if (key.startsWith(`${version}:`)) {
+                keysToDelete.push(key);
+            }
+        }
+        
+        // 删除缓存
+        keysToDelete.forEach(key => {
+            this.cache.delete(key);
+            this.loadingPromises.delete(key);
+        });
+        
+        console.log(`✅ 已清除 ${keysToDelete.length} 个缓存项`);
+    }
+    
+    /**
+     * 清除特定文件的缓存（所有版本）
      * @param {string} fileName - 文件名
      */
     clearFileCache(fileName) {
-        console.log(`🗑️ 清除缓存: ${fileName}`);
-        this.cache[fileName] = null;
-        delete this.loadingPromises[fileName];
+        console.log(`🗑️ 清除文件缓存: ${fileName}`);
+        const keysToDelete = [];
+        
+        // 查找该文件的所有版本缓存
+        for (const key of this.cache.keys()) {
+            if (key.endsWith(`:${fileName}`)) {
+                keysToDelete.push(key);
+            }
+        }
+        
+        // 删除缓存
+        keysToDelete.forEach(key => {
+            this.cache.delete(key);
+            this.loadingPromises.delete(key);
+        });
+        
+        console.log(`✅ 已清除 ${keysToDelete.length} 个缓存项`);
+    }
+    
+    /**
+     * 清除特定版本的特定文件缓存
+     * @param {string} fileName - 文件名
+     * @param {string} version - 版本号
+     */
+    clearSpecificCache(fileName, version) {
+        const key = this._getCacheKey(fileName, version);
+        console.log(`🗑️ 清除缓存: ${key}`);
+        this.cache.delete(key);
+        this.loadingPromises.delete(key);
     }
     
     /**
@@ -85,38 +127,35 @@ class DataManager {
             throw new Error('未设置数据版本，请先调用 setVersion()');
         }
         
-        // 如果版本不同，清除缓存
-        if (version && version !== this.currentVersion) {
-            this.setVersion(version);
-        }
+        const cacheKey = this._getCacheKey(fileName, targetVersion);
         
         // 如果已有缓存，直接返回
-        if (this.cache[fileName]) {
-            console.log(`✅ 使用缓存: ${fileName}`);
-            return this.cache[fileName];
+        if (this.cache.has(cacheKey)) {
+            console.log(`✅ 使用缓存: ${cacheKey}`);
+            return this.cache.get(cacheKey);
         }
         
         // 如果正在加载，返回加载中的 Promise
-        if (this.loadingPromises[fileName]) {
-            console.log(`⏳ 等待加载: ${fileName}`);
-            return this.loadingPromises[fileName];
+        if (this.loadingPromises.has(cacheKey)) {
+            console.log(`⏳ 等待加载: ${cacheKey}`);
+            return this.loadingPromises.get(cacheKey);
         }
         
         // 开始加载
-        console.log(`📥 加载文件: ${fileName} (版本: ${targetVersion})`);
+        console.log(`📥 加载文件: ${cacheKey}`);
         
-        const loadPromise = this._loadFileFromDisk(fileName, targetVersion);
-        this.loadingPromises[fileName] = loadPromise;
+        const loadPromise = this._loadFileFromDisk(fileName, targetVersion, cacheKey);
+        this.loadingPromises.set(cacheKey, loadPromise);
         
         try {
             const data = await loadPromise;
-            this.cache[fileName] = data;
-            delete this.loadingPromises[fileName];
-            console.log(`✅ 加载完成: ${fileName} (${data.Records?.length || 0} 条记录)`);
+            this.cache.set(cacheKey, data);
+            this.loadingPromises.delete(cacheKey);
+            console.log(`✅ 加载完成: ${cacheKey} (${data.Records?.length || Object.keys(data || {}).length} 项)`);
             return data;
         } catch (error) {
-            delete this.loadingPromises[fileName];
-            console.error(`❌ 加载失败: ${fileName}`, error);
+            this.loadingPromises.delete(cacheKey);
+            console.error(`❌ 加载失败: ${cacheKey}`, error);
             throw error;
         }
     }
@@ -125,7 +164,7 @@ class DataManager {
      * 从磁盘加载文件
      * @private
      */
-    async _loadFileFromDisk(fileName, version) {
+    async _loadFileFromDisk(fileName, version, cacheKey) {
         const filePath = `data/${version}/${fileName}.json`;
         const result = await window.fileAPI.readFile(filePath);
         
@@ -162,19 +201,29 @@ class DataManager {
     /**
      * 获取缓存的数据（不加载）
      * @param {string} fileName - 文件名
+     * @param {string} version - 版本号（可选，默认使用当前版本）
      * @returns {Object|null} 缓存的数据或 null
      */
-    getCached(fileName) {
-        return this.cache[fileName];
+    getCached(fileName, version = null) {
+        const targetVersion = version || this.currentVersion;
+        if (!targetVersion) return null;
+        
+        const cacheKey = this._getCacheKey(fileName, targetVersion);
+        return this.cache.get(cacheKey) || null;
     }
     
     /**
      * 检查文件是否已缓存
      * @param {string} fileName - 文件名
+     * @param {string} version - 版本号（可选，默认使用当前版本）
      * @returns {boolean} 是否已缓存
      */
-    isCached(fileName) {
-        return this.cache[fileName] !== null;
+    isCached(fileName, version = null) {
+        const targetVersion = version || this.currentVersion;
+        if (!targetVersion) return false;
+        
+        const cacheKey = this._getCacheKey(fileName, targetVersion);
+        return this.cache.has(cacheKey);
     }
     
     /**
@@ -200,16 +249,41 @@ class DataManager {
      * @returns {Object} 缓存统计
      */
     getCacheStats() {
-        const cached = Object.keys(this.cache).filter(key => this.cache[key] !== null);
-        const loading = Object.keys(this.loadingPromises);
+        // 统计缓存信息
+        const versionMap = new Map(); // version -> files[]
+        const cached = [];
+        
+        for (const key of this.cache.keys()) {
+            const [version, fileName] = key.split(':');
+            cached.push(key);
+            
+            if (!versionMap.has(version)) {
+                versionMap.set(version, []);
+            }
+            versionMap.get(version).push(fileName);
+        }
+        
+        // 统计加载中的文件
+        const loading = Array.from(this.loadingPromises.keys());
+        
+        // 按版本分组统计
+        const versionStats = {};
+        for (const [version, files] of versionMap.entries()) {
+            versionStats[version] = {
+                fileCount: files.length,
+                files: files
+            };
+        }
         
         return {
-            version: this.currentVersion,
-            cached: cached,
-            cachedCount: cached.length,
-            loading: loading,
-            loadingCount: loading.length,
-            totalSlots: Object.keys(this.cache).length
+            currentVersion: this.currentVersion,
+            totalCached: cached.length,
+            totalLoading: loading.length,
+            cachedKeys: cached,
+            loadingKeys: loading,
+            versions: Object.keys(versionStats),
+            versionCount: versionStats.length || Object.keys(versionStats).length,
+            byVersion: versionStats
         };
     }
     
@@ -218,15 +292,21 @@ class DataManager {
      */
     printCacheStats() {
         const stats = this.getCacheStats();
-        console.log('📊 缓存统计:');
-        console.log(`  版本: ${stats.version || '未设置'}`);
-        console.log(`  已缓存: ${stats.cachedCount}/${stats.totalSlots} 个文件`);
-        console.log(`  加载中: ${stats.loadingCount} 个文件`);
-        if (stats.cached.length > 0) {
-            console.log(`  已缓存文件: ${stats.cached.join(', ')}`);
+        console.log('📊 数据缓存统计:');
+        console.log(`  当前版本: ${stats.currentVersion || '未设置'}`);
+        console.log(`  已缓存: ${stats.totalCached} 项`);
+        console.log(`  加载中: ${stats.totalLoading} 项`);
+        console.log(`  版本数: ${stats.versionCount}`);
+        
+        if (Object.keys(stats.byVersion).length > 0) {
+            console.log('\n  按版本统计:');
+            for (const [version, info] of Object.entries(stats.byVersion)) {
+                console.log(`    ${version}: ${info.fileCount} 个文件 (${info.files.join(', ')})`);
+            }
         }
-        if (stats.loading.length > 0) {
-            console.log(`  加载中文件: ${stats.loading.join(', ')}`);
+        
+        if (stats.totalLoading > 0) {
+            console.log(`\n  加载中: ${stats.loadingKeys.join(', ')}`);
         }
     }
 }
