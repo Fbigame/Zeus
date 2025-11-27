@@ -1,6 +1,11 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const path = require('path')
 const fs = require('fs').promises
+const { autoUpdater } = require('electron-updater')
+
+// 配置自动更新
+autoUpdater.autoDownload = false
+autoUpdater.autoInstallOnAppQuit = true
 
 // 获取数据目录路径（开发时和打包后）
 function getDataPath() {
@@ -44,6 +49,11 @@ const createWindow = () => {
   mainWindow.once('ready-to-show', () => {
     mainWindow.maximize();
     mainWindow.show();
+    
+    // 检查更新（仅在生产环境）
+    if (app.isPackaged) {
+      checkForUpdates();
+    }
   });
 
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'))
@@ -71,13 +81,20 @@ const createMenu = () => {
       label: '帮助',
       submenu: [
         {
+          label: '检查更新',
+          click: () => {
+            checkForUpdates(true);
+          }
+        },
+        { type: 'separator' },
+        {
           label: '关于',
           click: () => {
             dialog.showMessageBox(mainWindow, {
               type: 'info',
               title: '关于版本对比工具',
               message: '版本对比工具',
-              detail: '一个基于 Electron 的版本对比工具\n版本: 1.0.0\n\n功能：\n• 版本对比\n• 差异分析\n• 结果导出'
+              detail: `一个基于 Electron 的版本对比工具\n版本: ${app.getVersion()}\n\n功能：\n• 版本对比\n• 差异分析\n• 结果导出`
             })
           }
         }
@@ -87,6 +104,93 @@ const createMenu = () => {
 
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
+}
+
+// 自动更新功能
+function checkForUpdates(manual = false) {
+  // 配置更新源
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'Fbigame',
+    repo: 'Zeus'
+  });
+
+  // 检查更新错误
+  autoUpdater.on('error', (error) => {
+    console.error('更新错误:', error);
+    if (manual) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'error',
+        title: '更新失败',
+        message: '检查更新时发生错误',
+        detail: error.message
+      });
+    }
+  });
+
+  // 检查更新
+  autoUpdater.on('checking-for-update', () => {
+    console.log('正在检查更新...');
+    if (manual) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: '检查更新',
+        message: '正在检查更新...'
+      });
+    }
+  });
+
+  // 有可用更新
+  autoUpdater.on('update-available', (info) => {
+    console.log('发现新版本:', info.version);
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: '发现新版本',
+      message: `发现新版本 ${info.version}`,
+      detail: '是否现在下载？',
+      buttons: ['下载', '稍后'],
+      defaultId: 0,
+      cancelId: 1
+    }).then(result => {
+      if (result.response === 0) {
+        autoUpdater.downloadUpdate();
+      }
+    });
+  });
+
+  // 没有可用更新
+  autoUpdater.on('update-not-available', () => {
+    console.log('当前已是最新版本');
+    if (manual) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: '已是最新版本',
+        message: '当前已是最新版本'
+      });
+    }
+  });
+
+  // 更新下载完成
+  autoUpdater.on('update-downloaded', () => {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: '更新下载完成',
+      message: '更新已下载完成',
+      detail: '应用将在退出后自动安装更新',
+      buttons: ['立即重启', '稍后'],
+      defaultId: 0,
+      cancelId: 1
+    }).then(result => {
+      if (result.response === 0) {
+        autoUpdater.quitAndInstall();
+      }
+    });
+  });
+
+  // 开始检查更新
+  autoUpdater.checkForUpdates().catch(err => {
+    console.error('检查更新失败:', err);
+  });
 }
 
 // IPC 处理器 - 获取默认数据路径

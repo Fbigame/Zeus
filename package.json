@@ -1,7 +1,11 @@
 {
   "name": "heathstone-client-tool",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "src/main/main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Fbigame/Zeus.git"
+  },
   "scripts": {
     "start": "electron-forge start",
     "start-utf8": "node start-utf8.js",
@@ -9,6 +13,7 @@
     "start-no-cache": "electron . --disable-web-security --disable-features=VizDisplayCompositor --no-sandbox --disable-gpu-sandbox --disable-dev-shm-usage",
     "package": "electron-forge package",
     "make": "electron-forge make",
+    "publish": "electron-forge publish",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Fbigame",
@@ -22,10 +27,12 @@
     "@electron-forge/maker-zip": "^7.10.2",
     "@electron-forge/plugin-auto-unpack-natives": "^7.10.2",
     "@electron-forge/plugin-fuses": "^7.10.2",
+    "@electron-forge/publisher-github": "^7.10.2",
     "@electron/fuses": "^1.8.0",
     "electron": "^39.0.0"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1"
+    "electron-squirrel-startup": "^1.0.1",
+    "electron-updater": "^6.6.2"
   }
 }

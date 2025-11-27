@@ -21,7 +21,7 @@ module.exports = {
   makers: [
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['win32'],
+      platforms: ['win32', 'darwin', 'linux'],
     },
     {
       name: '@electron-forge/maker-squirrel',
@@ -38,6 +38,19 @@ module.exports = {
       name: '@electron-forge/maker-rpm',
       config: {},
     },
+  ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'Fbigame',
+          name: 'Zeus'
+        },
+        prerelease: false,
+        draft: false
+      }
+    }
   ],
   plugins: [
     // 移除可能需要网络的插件
