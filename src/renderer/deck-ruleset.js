@@ -1063,9 +1063,11 @@ class DeckRulesetSystem {
                     <thead>
                         <tr style="background: #34495e; color: white;">
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd; min-width: 200px;">规则类型</th>
-                            ${selectedRulesetsData.map(rs => 
-                                `<th style="padding: 12px; text-align: center; border: 1px solid #ddd; min-width: 120px;">规则集 ${rs.id}</th>`
-                            ).join('')}
+                            ${selectedRulesetsData.map(rs => {
+                                const rulesetNote = this.userNotes.DECK_RULESET[rs.id] || '';
+                                const displayName = rulesetNote ? rulesetNote : `规则集 ${rs.id}`;
+                                return `<th style="padding: 12px; text-align: center; border: 1px solid #ddd; min-width: 120px;">${displayName}</th>`;
+                            }).join('')}
                         </tr>
                     </thead>
                     <tbody>

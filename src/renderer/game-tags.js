@@ -1219,13 +1219,13 @@ function getGameTagName(tagId) {
     return GameTags[tagId] || `未知标签(${tagId})`;
 }
 
-// 格式化标签显示（ID + 名称）
-function formatGameTag(tagId) {
+// 格式化标签显示（ID + 名称 + 值）
+function formatGameTag(tagId, value) {
     const tagName = GameTags[tagId];
     if (tagName) {
-        return `${tagId} (${tagName})`;
+        return `${tagName} (${tagId}=${value})`;
     }
-    return `${tagId}`;
+    return `标签${tagId} (${tagId}=${value})`;
 }
 
 // 导出到全局

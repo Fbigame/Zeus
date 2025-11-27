@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <title>卡牌查询</title>
+    <link rel="stylesheet" href="common-buttons.css">
+    <link rel="stylesheet" href="card-viewer.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🃏 卡牌查询</h1>
+        
+        <button id="backToIndexBtn" class="back-to-menu-btn">← 返回首页</button>
+
+        <!-- 版本选择区域 -->
+        <section class="version-selection-section">
+            <div class="version-container">
+                <h2>📂 版本选择</h2>
+                <div id="versionDetection" class="version-detection">
+                    <div class="detection-status">
+                        <span id="detectionStatus">正在检测版本文件夹...</span>
+                    </div>
+                    <div class="detection-info" id="dataPathInfo" style="margin-top: 8px; font-size: 11px; color: #6c757d;"></div>
+                </div>
+                
+                <div id="versionSelector" class="version-selector" style="display: none;">
+                    <div class="version-single">
+                        <div class="version-item">
+                            <h3>📦 选择版本</h3>
+                            <select id="versionSelect" class="version-select">
+                                <option value="">请选择版本</option>
+                            </select>
+                            <div class="version-info" id="versionInfo"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="load-controls">
+                        <button id="loadCardsBtn" class="load-btn" disabled>📥 加载卡牌数据</button>
+                        <button id="refreshVersionsBtn" class="refresh-btn">🔄 刷新版本</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 加载进度区域 -->
+        <section id="loadProgressSection" class="load-progress-section" style="display: none;">
+            <div class="progress-container">
+                <h2>⚙️ 正在加载</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">准备开始加载...</div>
+            </div>
+        </section>
+
+        <!-- 卡牌列表区域 -->
+        <section id="cardListSection" class="card-list-section" style="display: none;">
+            <div class="card-container">
+                <div class="card-header">
+                    <h2>🃏 卡牌列表</h2>
+                    <div>
+                        <button id="backToVersionBtn" class="back-btn">← 返回选择</button>
+                        <button id="exportCardsBtn" class="export-btn">💾 导出卡牌数据</button>
+                    </div>
+                </div>
+
+                <!-- 统计信息 -->
+                <div class="card-summary" id="cardSummary">
+                    <!-- 卡牌统计信息 -->
+                </div>
+
+                <!-- 搜索和筛选 -->
+                <div class="card-filters">
+                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索卡牌名称、ID或文本...">
+                    <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <select id="classFilter" class="filter-select">
+                            <option value="">所有职业</option>
+                        </select>
+                        <select id="typeFilter" class="filter-select">
+                            <option value="">所有类型</option>
+                        </select>
+                        <select id="rarityFilter" class="filter-select">
+                            <option value="">所有稀有度</option>
+                        </select>
+                        <select id="setFilter" class="filter-select">
+                            <option value="">所有扩展包</option>
+                        </select>
+                        <button id="clearFiltersBtn" class="back-btn">✖️ 清除筛选</button>
+                    </div>
+                </div>
+                
+                <!-- 卡牌计数 -->
+                <div style="margin: 15px 0; text-align: center; color: #6c757d; font-size: 14px;" id="cardCount">
+                    <!-- 卡牌数量和页码显示 -->
+                </div>
+                
+                <!-- 分页控件（顶部） -->
+                <div id="paginationTop">
+                    <!-- 分页按钮将在这里显示 -->
+                </div>
+                
+                <div class="card-list" id="cardList">
+                    <!-- 卡牌列表将在这里显示 -->
+                </div>
+                
+                <!-- 分页控件（底部） -->
+                <div id="pagination">
+                    <!-- 分页按钮将在这里显示 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 卡牌详情模态框 -->
+        <div id="cardModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalCardName">卡牌详情</h3>
+                    <button id="closeModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="cardDetails">
+                        <!-- 卡牌详细信息将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared-config.js"></script>
+    <script src="game-tags.js"></script>
+    <script src="tag-enums.js"></script>
+    <script src="card-viewer.js"></script>
+</body>
+</html>
