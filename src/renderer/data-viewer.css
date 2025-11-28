@@ -172,7 +172,8 @@ h3 {
 
 /* 过滤器 */
 .data-filters {
-    display: flex;
+    display: grid;
+    grid-template-columns: 2fr 180px 140px;
     gap: 15px;
     margin-bottom: 25px;
     padding: 15px;
@@ -187,17 +188,9 @@ h3 {
     font-size: 14px;
 }
 
-.search-input {
-    flex: 1;
-}
-
 .search-input:focus, .filter-select:focus {
     border-color: #3498db;
     outline: none;
-}
-
-.filter-select {
-    min-width: 180px;
 }
 
 /* 表格视图 */
@@ -388,11 +381,23 @@ h3 {
     }
     
     .data-filters {
-        flex-direction: column;
+        grid-template-columns: 1fr;
     }
     
     .header-actions {
         flex-direction: column;
+    }
+    
+    .data-header-top {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 1024px) and (min-width: 769px) {
+    .data-filters {
+        grid-template-columns: 1fr 160px 120px;
     }
 }
 

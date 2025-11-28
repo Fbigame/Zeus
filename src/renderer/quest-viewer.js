@@ -35,6 +35,9 @@ class QuestViewerSystem {
         };
         
         this.init();
+        
+        // 设置全局引用以便在HTML中调用
+        window.questViewer = this;
     }
     
     async init() {
@@ -478,11 +481,12 @@ class QuestViewerSystem {
         const abandonableOnly = document.getElementById('abandonableFilter').checked;
         
         this.filteredQuests = this.allQuests.filter(quest => {
-            // 搜索过滤
+            // 搜索过滤（支持ID、名称、描述）
             if (searchText) {
+                const matchId = quest.id.toString().includes(searchText);
                 const matchName = quest.name.toLowerCase().includes(searchText);
                 const matchDesc = quest.description.toLowerCase().includes(searchText);
-                if (!matchName && !matchDesc) return false;
+                if (!matchId && !matchName && !matchDesc) return false;
             }
             
             // 类型过滤
@@ -545,6 +549,124 @@ class QuestViewerSystem {
     }
     
     // 显示任务详情
+    showRewardDetails(rewardId) {
+        const rewardList = this.rewardLists.find(r => r.m_ID === rewardId);
+        if (!rewardList) {
+            alert(`未找到奖励列表 ID: ${rewardId}`);
+            return;
+        }
+        
+        // 创建临时模态框显示奖励详情
+        const existingModal = document.getElementById('rewardModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        const modal = document.createElement('div');
+        modal.id = 'rewardModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>奖励列表详情 - ID: ${rewardId}</h3>
+                    <button class="close-btn" onclick="this.closest('.modal').remove()">✖️</button>
+                </div>
+                <div class="modal-body">
+                    ${this.generateRewardDetails(rewardList)}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        modal.classList.add('active');
+        
+        // ESC键关闭
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        
+        // 点击外部关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        });
+    }
+    
+    generateRewardDetails(rewardList) {
+        const description = this.getRewardDescription(rewardList);
+        
+        let html = `
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-label">奖励列表 ID</div>
+                    <div class="detail-value">${rewardList.m_ID}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">奖励类型</div>
+                    <div class="detail-value">${rewardList.m_random ? '随机奖励' : '固定奖励'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">选择模式</div>
+                    <div class="detail-value">${rewardList.m_chooseOne ? '选择其一' : '全部获得'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">是否锁定</div>
+                    <div class="detail-value">${rewardList.m_locked ? '是' : '否'}</div>
+                </div>
+        `;
+        
+        // 显示备用奖励列表
+        if (rewardList.m_fallbackRewardListId && rewardList.m_fallbackRewardListId > 0) {
+            html += `
+                <div class="detail-item">
+                    <div class="detail-label">备用奖励列表 ID</div>
+                    <div class="detail-value">
+                        <span class="reward-link" onclick="questViewer.showRewardDetails(${rewardList.m_fallbackRewardListId})">${rewardList.m_fallbackRewardListId}</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 显示退出奖励列表
+        if (rewardList.m_exitRewardListId && rewardList.m_exitRewardListId > 0) {
+            html += `
+                <div class="detail-item">
+                    <div class="detail-label">退出奖励列表 ID</div>
+                    <div class="detail-value">
+                        <span class="reward-link" onclick="questViewer.showRewardDetails(${rewardList.m_exitRewardListId})">${rewardList.m_exitRewardListId}</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 显示奖励描述
+        if (description) {
+            html += `
+                <div class="detail-item" style="grid-column: 1 / -1;">
+                    <div class="detail-label">奖励描述</div>
+                    <div class="reward-description">${description}</div>
+                </div>
+            `;
+        }
+        
+        html += `</div>`;
+        return html;
+    }
+    
+    getRewardDescription(rewardList) {
+        if (rewardList.m_description && rewardList.m_description.m_locValues && rewardList.m_description.m_locValues.length > 0) {
+            // 优先选择中文描述（通常在索引12或13）
+            return rewardList.m_description.m_locValues[12] || rewardList.m_description.m_locValues[13] || rewardList.m_description.m_locValues[0] || '无描述';
+        }
+        return '无描述';
+    }
+
     showQuestDetails(questId) {
         const quest = this.allQuests.find(q => q.id === questId);
         if (!quest) return;
@@ -598,6 +720,14 @@ class QuestViewerSystem {
                         <div class="detail-label">任务池ID</div>
                         <div class="detail-value">${quest.questPoolId}</div>
                     </div>
+                    ${quest.rewardListId > 0 ? `
+                    <div class="detail-item">
+                        <div class="detail-label">奖励列表ID</div>
+                        <div class="detail-value">
+                            <span class="reward-link" onclick="questViewer.showRewardDetails(${quest.rewardListId})">${quest.rewardListId}</span>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
             

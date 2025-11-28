@@ -11,7 +11,9 @@ const SharedDataConfig = {
         // 规则集查看器使用
         'DECK_RULESET', 'DECK_RULESET_RULE', 'DECK_RULESET_RULE_SUBSET', 'SUBSET', 'SUBSET_RULE',
         // 卡牌查看器使用
-        'CARD_SET_TIMING', 'EventMap'
+        'CARD_SET_TIMING', 'EventMap',
+        // 奖励轨道功能使用
+        'REWARD_TRACK', 'REWARD_TRACK_LEVEL', 'REWARD_LIST'
     ]),
     
     // 注册已使用的文件（保留接口以便将来扩展）

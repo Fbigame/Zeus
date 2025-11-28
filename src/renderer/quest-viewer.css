@@ -568,3 +568,27 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* 奖励链接样式 */
+.reward-link {
+    color: var(--color-primary);
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.3s;
+}
+
+.reward-link:hover {
+    color: var(--color-primary-dark);
+}
+
+.reward-description {
+    background: var(--color-bg);
+    padding: 15px;
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--color-primary);
+    font-size: 0.95em;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    color: var(--color-on-surface);
+}

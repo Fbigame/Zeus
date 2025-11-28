@@ -752,6 +752,11 @@
                         <div class="feature-title">奖励查看器</div>
                         <div class="feature-desc">旧版成就系统 (父子结构)</div>
                     </button>
+                    <button id="selectRewardTrackBtn" class="feature-btn">
+                        <div class="feature-icon">🎁</div>
+                        <div class="feature-title">奖励轨道</div>
+                        <div class="feature-desc">查看奖励轨道和等级数据</div>
+                    </button>
                 </div>
             </div>
         </section>
@@ -980,6 +985,10 @@
 
         document.getElementById('selectAchieveViewerBtn').addEventListener('click', () => {
             window.location.href = 'achieve-viewer.html';
+        });
+
+        document.getElementById('selectRewardTrackBtn').addEventListener('click', () => {
+            window.location.href = 'reward-track.html';
         });
     </script>
     <script src="shared-config.js"></script>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <title>炉石传说奖励轨道</title>
+    <link rel="stylesheet" href="shared-theme.css">
+    <link rel="stylesheet" href="common-buttons.css">
+    <link rel="stylesheet" href="reward-track.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎁 炉石传说奖励轨道</h1>
+        
+        <button id="backToIndexBtn" class="back-to-menu-btn">← 返回首页</button>
+
+        <!-- 版本选择区域 -->
+        <section class="version-selection-section">
+            <div class="version-container">
+                <h2>📂 版本选择</h2>
+                <div id="versionDetection" class="version-detection">
+                    <div class="detection-status">
+                        <span id="detectionStatus">正在检测版本文件夹...</span>
+                    </div>
+                    <div class="detection-info" id="dataPathInfo" style="margin-top: 8px; font-size: 11px; color: #6c757d;"></div>
+                </div>
+                
+                <div id="versionSelector" class="version-selector" style="display: none;">
+                    <div class="version-single">
+                        <div class="version-item">
+                            <h3>📦 选择版本</h3>
+                            <select id="versionSelect" class="version-select">
+                                <option value="">请选择版本</option>
+                            </select>
+                            <div class="version-info" id="versionInfo"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="load-controls">
+                        <button id="loadRewardTracksBtn" class="load-btn" disabled>🎁 加载奖励轨道</button>
+                        <button id="refreshVersionsBtn" class="refresh-btn">🔄 刷新版本</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 加载进度区域 -->
+        <section id="loadProgressSection" class="load-progress-section" style="display: none;">
+            <div class="progress-container">
+                <h2>⚙️ 正在加载</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">准备开始加载...</div>
+            </div>
+        </section>
+
+        <!-- 奖励轨道列表区域 -->
+        <section id="trackListSection" class="track-list-section" style="display: none;">
+            <div class="track-container">
+                <div class="track-header">
+                    <div class="track-header-top">
+                        <h2>🎁 奖励轨道列表</h2>
+                        <div>
+                            <button id="backToVersionBtn" class="back-btn">← 返回选择</button>
+                            <button id="exportTracksBtn" class="export-btn">💾 导出轨道数据</button>
+                        </div>
+                    </div>
+                    <div class="track-summary" id="trackSummary">
+                        <!-- 轨道统计信息 -->
+                    </div>
+                </div>
+
+                <!-- 分类切换 -->
+                <div class="track-categories">
+                    <div class="category-tabs" id="categoryTabs">
+                        <button class="category-tab active" data-type="all">🎯 全部轨道</button>
+                        <button class="category-tab" data-type="1">🌍 全局轨道</button>
+                        <button class="category-tab" data-type="2">🎲 酒馆战棋</button>
+                        <button class="category-tab" data-type="7">🎭 活动轨道</button>
+                        <button class="category-tab" data-type="8">📚 学徒轨道</button>
+                    </div>
+                </div>
+
+                <!-- 搜索和过滤 -->
+                <div class="track-filters">
+                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索轨道名称或ID...">
+                    <select id="seasonFilter" class="filter-select">
+                        <option value="">全部赛季</option>
+                    </select>
+                    <select id="typeFilter" class="filter-select">
+                        <option value="">全部类型</option>
+                        <option value="1">全局轨道</option>
+                        <option value="2">酒馆战棋</option>
+                        <option value="7">活动轨道</option>
+                        <option value="8">学徒轨道</option>
+                    </select>
+                </div>
+                
+                <div class="track-list" id="trackList">
+                    <!-- 奖励轨道列表将在这里显示 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 轨道详情模态框 -->
+        <div id="trackModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTrackName">轨道详情</h3>
+                    <button id="closeModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="trackDetails">
+                        <!-- 轨道详细信息将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 等级详情模态框 -->
+        <div id="levelModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalLevelTitle">等级详情</h3>
+                    <button id="closeLevelModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="levelDetails">
+                        <!-- 等级详细信息将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="data-manager.js"></script>
+    <script src="shared-config.js"></script>
+    <script src="reward-track.js"></script>
+</body>
+</html>
