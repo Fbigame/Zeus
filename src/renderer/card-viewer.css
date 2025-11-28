@@ -1,130 +1,8 @@
 /* 卡牌查询页面样式 */
-body {
-    margin: 0;
-    padding: 20px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-}
-
-.container {
-    max-width: 1600px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-}
-
-h1 {
-    color: #2c3e50;
-    margin-bottom: 20px;
-    font-size: 28px;
-    text-align: center;
-}
-
-h2 {
-    color: #34495e;
-    margin-bottom: 15px;
-    font-size: 20px;
-}
 
 /* 版本选择区域 */
-.version-selection-section {
-    margin-bottom: 30px;
-}
-
-.version-container {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-}
-
-.version-detection {
-    padding: 15px;
-    background: white;
-    border-radius: 6px;
-    border: 2px dashed #dee2e6;
-}
-
-.detection-status {
-    font-size: 14px;
-    color: #495057;
-}
-
-.version-selector {
-    margin-top: 15px;
-}
-
-.version-single {
-    margin-bottom: 15px;
-}
-
-.version-item h3 {
-    font-size: 16px;
-    color: #495057;
-    margin-bottom: 8px;
-}
-
-.version-select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
-    font-size: 14px;
-    background: white;
-}
-
-.version-info {
-    margin-top: 8px;
-    padding: 8px;
-    background: #e3f2fd;
-    border-radius: 4px;
-    font-size: 13px;
-    color: #1976d2;
-}
-
-.load-controls {
-    display: flex;
-    gap: 10px;
-}
-
-.load-btn, .refresh-btn {
-    flex: 1;
-}
 
 /* 加载进度 */
-.load-progress-section {
-    margin-bottom: 30px;
-}
-
-.progress-container {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 30px;
-    background: #e9ecef;
-    border-radius: 15px;
-    overflow: hidden;
-    margin: 15px 0;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    transition: width 0.3s ease;
-    width: 0%;
-}
-
-.progress-text {
-    text-align: center;
-    color: #495057;
-    font-size: 14px;
-}
 
 /* 卡牌列表区域 */
 .card-list-section {
@@ -163,7 +41,7 @@ h2 {
     margin-top: 30px;
     margin-bottom: 30px;
     padding: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     border-radius: 10px;
     color: white;
 }
@@ -216,8 +94,8 @@ h2 {
 /* 卡牌列表 */
 .card-list {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
 }
 
 .card-item {
@@ -230,8 +108,8 @@ h2 {
 }
 
 .card-item:hover {
-    border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
     transform: translateY(-2px);
 }
 
@@ -277,122 +155,7 @@ h2 {
     font-style: italic;
 }
 
-/* 模态框 */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    overflow-y: auto;
-}
-
-.modal.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 12px;
-    max-width: 800px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    border-bottom: 2px solid #e9ecef;
-}
-
-.modal-header h3 {
-    margin: 0;
-    color: #2c3e50;
-    font-size: 20px;
-}
-
-.close-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #6c757d;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-}
-
-.close-btn:hover {
-    background: #f8f9fa;
-    color: #dc3545;
-}
-
-.modal-body {
-    padding: 20px;
-}
-
-.detail-section {
-    margin-bottom: 20px;
-}
-
-.detail-section h4 {
-    color: #495057;
-    font-size: 16px;
-    margin-bottom: 10px;
-    border-bottom: 2px solid #e9ecef;
-    padding-bottom: 5px;
-}
-
-.detail-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-}
-
-.detail-item {
-    background: #f8f9fa;
-    padding: 10px;
-    border-radius: 6px;
-}
-
-.detail-label {
-    font-size: 12px;
-    color: #6c757d;
-    margin-bottom: 4px;
-}
-
-.detail-value {
-    font-size: 14px;
-    color: #2c3e50;
-    font-weight: 500;
-}
-
-.tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.tag-item {
-    background: #e3f2fd;
-    color: #1976d2;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-}
+/* 模态框由 shared-theme.css 统一处理 */
 
 /* 分页控件 */
 #pagination {
@@ -455,8 +218,9 @@ h2 {
     transform: translateX(0);
 }
 
+
 .toast-success {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
 }
 
 .toast-error {

@@ -1,0 +1,420 @@
+:root {
+    --color-bg: #f8f9fa;
+    --color-surface: #ffffff;
+    --color-on-surface: #2c3e50;
+    --color-muted: #6c757d;
+    --color-border: #e9ecef;
+    --color-primary: #3498db;
+    --color-primary-dark: #2980b9;
+    --color-accent: #667eea;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 5px 15px rgba(52, 152, 219, 0.15);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-on-surface);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+section {
+    margin-bottom: 30px;
+}
+
+h1 {
+    text-align: center;
+    color: var(--color-on-surface);
+    margin-bottom: 20px;
+    font-size: 2.2em;
+}
+
+h2 {
+    color: #34495e;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--color-primary);
+    padding-bottom: 10px;
+}
+
+h3 {
+    color: var(--color-primary);
+    margin-bottom: 12px;
+}
+
+h4 {
+    color: #34495e;
+    margin-bottom: 10px;
+}
+
+.version-container,
+.progress-container,
+.deck-container,
+.card-container,
+.quest-container,
+.achievement-container,
+.achieve-list-section,
+.compare-version-section,
+.compare-results-section,
+.selection-container,
+.data-container,
+.ruleset-list-section,
+.results-container,
+.version-section,
+.achievement-list-section,
+.quest-list-section {
+    background: var(--color-surface);
+    padding: 25px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-soft);
+}
+
+.version-detection,
+.version-info,
+.deck-filters,
+.card-filters,
+.quest-filters,
+.achievement-filters,
+.data-filters,
+.ruleset-filters,
+.export-section {
+    background: var(--color-bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    padding: 15px;
+}
+
+.version-detection {
+    text-align: center;
+}
+
+.version-selector {
+    margin-top: 20px;
+}
+
+.version-pair {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+}
+
+.version-select,
+.form-control,
+.select-input,
+.search-input,
+.filter-select,
+.page-size-select,
+input[type="text"],
+select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    background: white;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.version-select:focus,
+.form-control:focus,
+.select-input:focus,
+.search-input:focus,
+.filter-select:focus,
+.page-size-select:focus,
+input[type="text"]:focus,
+select:focus {
+    border-color: var(--color-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+}
+
+.mode-toggle,
+.view-toggle,
+.load-controls,
+.button-group,
+.header-actions,
+.quest-header-top > div,
+.deck-header-top > div,
+.card-header > div,
+.results-header-top > div {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.mode-toggle,
+.view-toggle,
+.load-controls {
+    justify-content: center;
+}
+
+.mode-btn,
+.view-toggle-btn,
+.view-btn,
+.compare-tab,
+.result-tab,
+.result-tab,
+.compare-tab,
+.button-like {
+    padding: 12px 24px;
+    border: 2px solid #ddd;
+    background: white;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+    transition: all 0.3s ease;
+}
+
+.mode-btn:hover,
+.view-toggle-btn:hover,
+.view-btn:hover,
+.compare-tab:hover,
+.result-tab:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.mode-btn.active,
+.view-toggle-btn.active,
+.view-btn.active,
+.compare-tab.active,
+.result-tab.active {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: white;
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-hover);
+}
+
+.load-controls {
+    margin-top: 20px;
+}
+
+.progress-container {
+    text-align: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #ecf0f1;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), #2ecc71);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 1.1em;
+    color: var(--color-on-surface);
+}
+
+.summary-item {
+    text-align: center;
+    padding: 15px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: white;
+    min-width: 120px;
+}
+
+.summary-value {
+    font-size: 1.6em;
+    font-weight: bold;
+    display: block;
+}
+
+.summary-label {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.search-input {
+    width: 100%;
+}
+
+.filter-select {
+    min-width: 150px;
+}
+
+.list-grid,
+.deck-list,
+.card-list,
+.quest-list,
+.achievement-list,
+.ruleset-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.list-card,
+.deck-item,
+.card-item,
+.quest-card,
+.achievement-item,
+.ruleset-item,
+.pool-card,
+.compare-deck-card,
+.compare-quest-card {
+    background: var(--color-bg);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.list-card:hover,
+.deck-item:hover,
+.card-item:hover,
+.quest-card:hover,
+.achievement-item:hover,
+.ruleset-item:hover,
+.pool-card:hover,
+.compare-deck-card:hover,
+.compare-quest-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-3px);
+}
+
+.status-ready {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.status-error {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.no-results {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--color-muted);
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-content {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-md);
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--color-on-surface);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--color-muted);
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background: var(--color-bg);
+    color: #e74c3c;
+}
+
+.modal-body {
+    padding: 20px 24px;
+}
+
+.info-grid,
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.info-item,
+.detail-item {
+    padding: 12px;
+    background: var(--color-bg);
+    border-radius: var(--radius-sm);
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
+    .mode-toggle,
+    .view-toggle,
+    .load-controls {
+        flex-direction: column;
+    }
+
+    .list-grid,
+    .deck-list,
+    .card-list,
+    .quest-list,
+    .achievement-list,
+    .ruleset-list {
+        grid-template-columns: 1fr;
+    }
+}

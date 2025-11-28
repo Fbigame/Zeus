@@ -1,23 +1,5 @@
 /* ACHIEVE 系统查看器样式 */
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    padding: 20px;
-}
-
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
 /* 头部 */
 .header {
     background: rgba(255, 255, 255, 0.95);
@@ -31,43 +13,23 @@ body {
 }
 
 .header-content h1 {
-    color: #667eea;
+    color: var(--color-primary);
     font-size: 2em;
     margin-bottom: 8px;
 }
 
 .header-content p {
-    color: #666;
+    color: var(--color-muted);
     font-size: 1em;
 }
 
 .back-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 1em;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.back-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    /* 基础按钮样式由 common-buttons.css 统一 */
 }
 
 /* 版本选择区域 */
-.version-section {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 15px;
-    padding: 25px 30px;
-    margin-bottom: 25px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
 .version-selection h3 {
-    color: #667eea;
+    color: var(--color-primary);
     margin-bottom: 15px;
     font-size: 1.2em;
 }
@@ -78,67 +40,25 @@ body {
     margin-bottom: 20px;
 }
 
-.version-select {
-    flex: 1;
-    padding: 12px 16px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 1em;
-    background: white;
-    cursor: pointer;
-    transition: border-color 0.3s;
-}
-
-.version-select:hover {
-    border-color: #667eea;
-}
-
-.version-select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
 /* 模式切换 */
 .mode-toggle-section {
     margin-bottom: 25px;
 }
 
 .mode-toggle-section h3 {
-    color: #667eea;
+    color: var(--color-primary);
     margin-bottom: 15px;
     font-size: 1.2em;
 }
 
 .mode-toggle-buttons {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 15px;
 }
 
-.mode-btn {
-    padding: 20px;
-    font-size: 1.1em;
-    font-weight: 600;
-    border: 3px solid #e0e0e0;
-    border-radius: 12px;
-    background: white;
-    color: #666;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.mode-btn:hover {
-    border-color: #667eea;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-}
-
-.mode-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+.mode-toggle-buttons .mode-btn {
+    width: 100%;
 }
 
 /* 对比版本选择 */
@@ -161,7 +81,7 @@ body {
 
 .version-select-group label {
     font-weight: 600;
-    color: #667eea;
+    color: var(--color-primary);
     font-size: 1em;
 }
 
@@ -172,36 +92,10 @@ body {
 
 .load-btn {
     width: 100%;
-    padding: 15px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 1.1em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.load-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.load-btn:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    opacity: 0.6;
 }
 
 /* 成就列表区域 */
-.achieve-list-section,
-.compare-results-section {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 15px;
-    padding: 25px 30px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
+/* 列表与对比容器外观由 shared theme 负责 */
 
 .achieve-container {
     display: flex;
@@ -224,7 +118,7 @@ body {
 }
 
 .achieve-header h2 {
-    color: #667eea;
+    color: var(--color-primary);
     font-size: 1.8em;
 }
 
@@ -237,8 +131,8 @@ body {
 .operation-btn {
     padding: 10px 20px;
     background: white;
-    color: #667eea;
-    border: 2px solid #667eea;
+    color: var(--color-primary);
+    border: 2px solid var(--color-primary);
     border-radius: 8px;
     font-size: 0.95em;
     font-weight: 600;
@@ -247,28 +141,13 @@ body {
 }
 
 .operation-btn:hover {
-    background: #667eea;
+    background: var(--color-primary);
     color: white;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
 }
 
-.export-btn {
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.95em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.export-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
-}
+/* 导出按钮沿用 common-buttons.css 的主题颜色 */
 
 /* 统计信息 */
 .achieve-summary {
@@ -276,50 +155,28 @@ body {
     gap: 25px;
     flex-wrap: wrap;
     padding: 15px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     border-radius: 10px;
+    color: white;
 }
 
 .achieve-summary span {
-    color: #666;
+    color: rgba(255,255,255,0.9);
     font-size: 1em;
 }
 
 .achieve-summary strong {
-    color: #667eea;
+    color: white;
     font-size: 1.2em;
 }
 
 /* 视图切换 */
 .view-toggle {
     display: flex;
-    gap: 10px;
-    background: #f5f7fa;
+    gap: 12px;
     padding: 5px;
     border-radius: 10px;
     width: fit-content;
-}
-
-.view-btn {
-    padding: 10px 20px;
-    background: transparent;
-    color: #666;
-    border: none;
-    border-radius: 8px;
-    font-size: 1em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.view-btn:hover {
-    background: rgba(102, 126, 234, 0.1);
-}
-
-.view-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 /* 过滤器 */
@@ -331,7 +188,7 @@ body {
 
 .search-input, .filter-select {
     padding: 12px 16px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--color-border);
     border-radius: 8px;
     font-size: 1em;
     transition: border-color 0.3s;
@@ -339,12 +196,13 @@ body {
 
 .search-input:focus, .filter-select:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
 }
 
 .search-input::placeholder {
-    color: #999;
+    color: var(--color-muted);
+    opacity: 0.85;
 }
 
 /* 树形视图 */
@@ -356,20 +214,20 @@ body {
 
 .tree-node {
     background: white;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--color-border);
     border-radius: 12px;
     overflow: hidden;
     transition: all 0.3s;
 }
 
 .tree-node:hover {
-    border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
 }
 
 .tree-node-header {
     padding: 15px 20px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-border) 100%);
     cursor: pointer;
     display: flex;
     justify-content: space-between;
@@ -378,7 +236,7 @@ body {
 }
 
 .tree-node-header:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     color: white;
 }
 
@@ -404,13 +262,13 @@ body {
 }
 
 .tree-node-info {
-    color: #666;
+    color: var(--color-muted);
     font-size: 0.9em;
 }
 
 .tree-node-children {
     padding: 15px 20px 15px 40px;
-    background: #fafafa;
+    background: var(--color-bg);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -429,7 +287,7 @@ body {
 
 .achieve-card {
     background: white;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--color-border);
     border-radius: 12px;
     padding: 20px;
     transition: all 0.3s;
@@ -437,8 +295,8 @@ body {
 }
 
 .achieve-card:hover {
-    border-color: #667eea;
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.2);
+    border-color: var(--color-primary);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.2);
     transform: translateY(-4px);
 }
 
@@ -450,7 +308,7 @@ body {
 }
 
 .achieve-card-id {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     color: white;
     padding: 6px 12px;
     border-radius: 6px;
@@ -470,12 +328,12 @@ body {
 .achieve-card-name {
     font-size: 1.1em;
     font-weight: 600;
-    color: #333;
+    color: var(--color-on-surface);
     margin-bottom: 8px;
 }
 
 .achieve-card-desc {
-    color: #666;
+    color: var(--color-muted);
     font-size: 0.95em;
     margin-bottom: 12px;
     line-height: 1.5;
@@ -526,7 +384,7 @@ body {
     gap: 25px;
     flex-wrap: wrap;
     padding: 15px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-border) 100%);
     border-radius: 10px;
     margin-bottom: 20px;
 }
@@ -556,7 +414,7 @@ body {
 .compare-tabs {
     display: flex;
     gap: 10px;
-    background: #f5f7fa;
+    background: var(--color-bg);
     padding: 5px;
     border-radius: 10px;
     margin-bottom: 20px;
@@ -564,25 +422,6 @@ body {
 
 .compare-tab {
     flex: 1;
-    padding: 12px;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    font-size: 1em;
-    font-weight: 600;
-    color: #666;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.compare-tab:hover {
-    background: rgba(102, 126, 234, 0.1);
-}
-
-.compare-tab.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .compare-content {
@@ -599,7 +438,7 @@ body {
 
 .change-item {
     background: white;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--color-border);
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 15px;
@@ -625,7 +464,7 @@ body {
 }
 
 .change-id {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     color: white;
     padding: 6px 12px;
     border-radius: 6px;
@@ -640,13 +479,13 @@ body {
 
 .change-field {
     padding: 10px;
-    background: #f5f7fa;
+    background: var(--color-bg);
     border-radius: 6px;
 }
 
 .field-name {
     font-weight: 600;
-    color: #667eea;
+    color: var(--color-primary);
     margin-bottom: 5px;
 }
 
@@ -666,87 +505,13 @@ body {
     font-weight: 600;
 }
 
-/* 弹窗 */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(5px);
-}
-
-.modal-content {
-    background: white;
-    margin: 50px auto;
-    padding: 0;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 800px;
-    max-height: 85vh;
-    overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 20px 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-header h3 {
-    font-size: 1.5em;
-}
-
-.close-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    font-size: 1.5em;
-    cursor: pointer;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.3s;
-}
-
-.close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-.modal-body {
-    padding: 30px;
-    max-height: calc(85vh - 80px);
-    overflow-y: auto;
-}
-
+/* 弹窗详情 */
 .detail-section {
     margin-bottom: 20px;
 }
 
 .detail-section h4 {
-    color: #667eea;
+    color: var(--color-primary);
     margin-bottom: 10px;
     font-size: 1.1em;
 }
@@ -758,20 +523,20 @@ body {
 }
 
 .detail-item {
-    background: #f5f7fa;
+    background: var(--color-bg);
     padding: 12px;
     border-radius: 8px;
 }
 
 .detail-label {
     font-size: 0.85em;
-    color: #666;
+    color: var(--color-muted);
     margin-bottom: 5px;
 }
 
 .detail-value {
     font-weight: 600;
-    color: #333;
+    color: var(--color-on-surface);
     font-size: 1em;
 }
 
@@ -807,7 +572,7 @@ body {
 .empty-state {
     text-align: center;
     padding: 60px 20px;
-    color: #999;
+    color: var(--color-muted);
 }
 
 .empty-state-icon {
@@ -817,5 +582,5 @@ body {
 
 .empty-state-text {
     font-size: 1.2em;
-    color: #666;
+    color: var(--color-muted);
 }

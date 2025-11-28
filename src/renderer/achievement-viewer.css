@@ -1,200 +1,21 @@
 /* 成就查看器样式 */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Microsoft YaHei', Arial, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #333;
-    line-height: 1.6;
-    min-height: 100vh;
-}
-
-.container {
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-h1 {
-    text-align: center;
-    color: white;
-    margin-bottom: 20px;
-    font-size: 2.2em;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-}
-
-h2 {
-    color: #34495e;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #3498db;
-    padding-bottom: 10px;
-}
 
 /* 版本选择区域 */
-.version-selection-section {
-    margin-bottom: 30px;
-}
-
-.version-container {
-    background: white;
-    border-radius: 15px;
-    padding: 30px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-}
-
-.version-detection {
-    text-align: center;
-    padding: 40px 20px;
-}
-
-.detection-status {
-    font-size: 16px;
-    color: #666;
-    margin-bottom: 20px;
-}
-
-.version-selector {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-}
-
-.version-single {
-    display: flex;
-    justify-content: center;
-}
-
-.version-item {
-    flex: 1;
-    max-width: 600px;
-}
-
-.version-item h3 {
-    color: #2980b9;
-    margin-bottom: 15px;
-    font-size: 1.1em;
-}
-
-.version-select {
-    width: 100%;
-    padding: 12px 15px;
-    font-size: 15px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.version-select:hover {
-    border-color: #3498db;
-}
-
-.version-select:focus {
-    outline: none;
-    border-color: #2980b9;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-}
-
-.version-info {
-    margin-top: 15px;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 6px;
-    font-size: 14px;
-    line-height: 1.8;
-}
-
-.status-ready {
-    color: #27ae60;
-    font-weight: bold;
-}
-
-.status-error {
-    color: #e74c3c;
-    font-weight: bold;
-}
-
-.load-controls {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-}
-
-.load-btn, .refresh-btn {
-    padding: 12px 30px;
-    font-size: 16px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: bold;
-}
-
-.load-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.load-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-.load-btn:disabled {
-    background: #bdc3c7;
-    cursor: not-allowed;
-}
-
-.refresh-btn {
-    background: #ecf0f1;
-    color: #34495e;
-}
-
-.refresh-btn:hover {
-    background: #bdc3c7;
-}
 
 /* 版本选择区的模式切换 */
 .mode-toggle-section {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     justify-content: center;
     margin-bottom: 25px;
     padding: 20px;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.08), rgba(41, 128, 185, 0.08));
     border-radius: 12px;
 }
 
 .mode-toggle-section .mode-btn {
     flex: 1;
-    max-width: 200px;
-    padding: 15px 30px;
-    border: 2px solid #e9ecef;
-    background: white;
-    color: #666;
-    cursor: pointer;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.mode-toggle-section .mode-btn:hover {
-    border-color: #667eea;
-    background: rgba(102, 126, 234, 0.05);
-    transform: translateY(-2px);
-}
-
-.mode-toggle-section .mode-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-color: transparent;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    max-width: 220px;
 }
 
 /* 模式切换 */
@@ -205,13 +26,6 @@ h2 {
 }
 
 /* 对比版本选择 */
-.compare-version-section {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-bottom: 25px;
-}
 
 .version-compare-pair {
     display: grid;
@@ -221,7 +35,7 @@ h2 {
 }
 
 .version-compare-item h3 {
-    color: #764ba2;
+    color: var(--color-primary-dark);
     margin-bottom: 15px;
     font-size: 16px;
 }
@@ -233,7 +47,7 @@ h2 {
 }
 
 .btn-compare {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     color: white;
     padding: 12px 40px;
     font-size: 16px;
@@ -246,7 +60,7 @@ h2 {
 
 .btn-compare:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.35);
 }
 
 .btn-compare:disabled {
@@ -269,13 +83,6 @@ h2 {
 }
 
 /* 对比结果 */
-.compare-results-section {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
 .results-header {
     display: flex;
     justify-content: space-between;
@@ -284,7 +91,7 @@ h2 {
 }
 
 .results-header h3 {
-    color: #764ba2;
+    color: var(--color-primary-dark);
     margin: 0;
 }
 
@@ -348,13 +155,13 @@ h2 {
 }
 
 .result-tab:hover {
-    color: #764ba2;
-    background: rgba(102, 126, 234, 0.05);
+    color: var(--color-primary);
+    background: rgba(52, 152, 219, 0.08);
 }
 
 .result-tab.active {
-    color: #764ba2;
-    border-bottom-color: #764ba2;
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
     font-weight: 600;
 }
 
@@ -367,7 +174,7 @@ h2 {
     padding: 20px;
     border-radius: 10px;
     margin-bottom: 15px;
-    border-left: 4px solid #764ba2;
+    border-left: 4px solid var(--color-primary);
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -449,53 +256,10 @@ h2 {
 }
 
 /* 加载进度区域 */
-.load-progress-section {
-    margin-bottom: 30px;
-}
-
-.progress-container {
-    background: white;
-    border-radius: 15px;
-    padding: 40px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    text-align: center;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 30px;
-    background: #ecf0f1;
-    border-radius: 15px;
-    overflow: hidden;
-    margin: 20px 0;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    transition: width 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-}
-
-.progress-text {
-    font-size: 16px;
-    color: #666;
-}
 
 /* 成就列表区域 */
 .achievement-list-section {
     margin-bottom: 30px;
-}
-
-.achievement-container {
-    background: white;
-    border-radius: 15px;
-    padding: 30px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
 .achievement-header-top {
@@ -511,92 +275,23 @@ h2 {
     padding: 0;
 }
 
-.back-btn, .export-btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    margin-left: 10px;
-}
-
-.back-btn {
-    background: #95a5a6;
-    color: white;
-}
-
-.back-btn:hover {
-    background: #7f8c8d;
-}
-
-.export-btn {
-    background: #3498db;
-    color: white;
-}
-
-.export-btn:hover {
-    background: #2980b9;
-}
+/* 按钮样式由 common-buttons.css 统一 */
 
 .achievement-summary {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    display: flex;
     gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
     margin-bottom: 25px;
-    padding: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 10px;
-}
-
-.summary-item {
-    text-align: center;
-    color: white;
-}
-
-.summary-value {
-    display: block;
-    font-size: 2em;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.summary-label {
-    font-size: 0.9em;
-    opacity: 0.9;
 }
 
 /* 视图切换 */
 .view-toggle {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     justify-content: center;
     margin-bottom: 25px;
     padding: 10px;
-    background: #f8f9fa;
-    border-radius: 10px;
-}
-
-.view-btn {
-    padding: 12px 30px;
-    border: 2px solid #ddd;
-    background: white;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 15px;
-    transition: all 0.3s ease;
-    font-weight: 500;
-}
-
-.view-btn:hover {
-    border-color: #3498db;
-    color: #3498db;
-}
-
-.view-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-color: transparent;
 }
 
 /* 过滤器 */
@@ -646,7 +341,7 @@ h2 {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
 }
 
 .achievement-item:hover {
@@ -670,7 +365,7 @@ h2 {
 }
 
 .achievement-badge {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     color: white;
     padding: 4px 12px;
     border-radius: 12px;
@@ -690,12 +385,12 @@ h2 {
 .achievement-category-tag {
     display: inline-block;
     padding: 4px 12px;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-    color: #764ba2;
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.12), rgba(41, 128, 185, 0.1));
+    color: var(--color-primary-dark);
     border-radius: 12px;
     font-size: 12px;
     margin-bottom: 10px;
-    border: 1px solid rgba(118, 75, 162, 0.2);
+    border: 1px solid rgba(52, 152, 219, 0.3);
 }
 
 .achievement-info {
@@ -735,7 +430,7 @@ h2 {
 }
 
 .category-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     color: white;
     padding: 18px 25px;
     cursor: pointer;
@@ -746,7 +441,7 @@ h2 {
 }
 
 .category-header:hover {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
 }
 
 .category-name {
@@ -776,81 +471,7 @@ h2 {
     gap: 15px;
 }
 
-/* 模态框 */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(5px);
-}
-
-.modal-content {
-    background: white;
-    margin: 3% auto;
-    padding: 0;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 900px;
-    max-height: 85vh;
-    overflow-y: auto;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.3);
-    animation: modalSlideIn 0.3s ease;
-}
-
-@keyframes modalSlideIn {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 25px 30px;
-    border-radius: 15px 15px 0 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-header h3 {
-    margin: 0;
-    font-size: 1.5em;
-}
-
-.close-btn {
-    background: rgba(255,255,255,0.2);
-    border: none;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-.close-btn:hover {
-    background: rgba(255,255,255,0.3);
-    transform: rotate(90deg);
-}
-
-.modal-body {
-    padding: 30px;
-}
+/* 模态框交互交由 shared-theme.css 处理 */
 
 /* 成就详情 */
 .achievement-details-info {
