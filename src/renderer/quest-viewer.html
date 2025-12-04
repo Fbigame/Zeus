@@ -111,6 +111,12 @@
                 <div class="quest-filters">
                     <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索任务ID、名称或描述...">
                     <div class="filter-row">
+                        <select id="sortSelect" class="filter-select">
+                            <option value="id-asc">按ID排序 ↑</option>
+                            <option value="id-desc">按ID排序 ↓</option>
+                            <option value="reward-asc">按奖励排序 ↑</option>
+                            <option value="reward-desc">按奖励排序 ↓</option>
+                        </select>
                         <select id="typeFilter" class="filter-select">
                             <option value="">所有类型</option>
                         </select>
@@ -120,6 +126,10 @@
                             <option value="medium">中等奖励 (400-1000 XP)</option>
                             <option value="high">高奖励 (≥1000 XP)</option>
                         </select>
+                        <label>
+                            <input type="checkbox" id="reverseOrderCheck">
+                            倒序查看
+                        </label>
                         <label>
                             <input type="checkbox" id="extraRewardFilter">
                             仅显示有额外奖励

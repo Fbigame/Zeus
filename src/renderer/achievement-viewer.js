@@ -12,6 +12,8 @@ class AchievementSystem {
         this.conditions = {}; // 成就条件映射
         this.currentView = 'achievement'; // 'achievement' or 'category'
         this.currentMode = 'normal'; // 'normal' or 'compare'
+        this.sortBy = 'id'; // 排序字段
+        this.reverseSort = false; // 是否倒序
         this.compareData = {
             newVersion: null,
             oldVersion: null,
@@ -64,6 +66,15 @@ class AchievementSystem {
         document.getElementById('categoryFilter').addEventListener('change', () => this.onCategoryFilterChange());
         document.getElementById('subcategoryFilter').addEventListener('change', () => this.onSubcategoryFilterChange());
         document.getElementById('sectionFilter').addEventListener('change', () => this.filterAchievements());
+        document.getElementById('sortSelect').addEventListener('change', (e) => {
+            this.sortBy = e.target.value;
+            this.filterAchievements();
+        });
+        document.getElementById('reverseSortBtn').addEventListener('click', () => {
+            this.reverseSort = !this.reverseSort;
+            document.getElementById('reverseSortBtn').classList.toggle('active', this.reverseSort);
+            this.filterAchievements();
+        });
         
         // 模态框
         document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
@@ -1046,6 +1057,32 @@ class AchievementSystem {
             const matchSubcategory = !subcategoryFilter || ach.subcategoryId == subcategoryFilter;
             const matchSection = !sectionFilter || ach.sectionId == sectionFilter;
             return matchSearch && matchCategory && matchSubcategory && matchSection;
+        });
+        
+        // 排序
+        this.filteredAchievements.sort((a, b) => {
+            let aValue, bValue;
+            
+            switch(this.sortBy) {
+                case 'id':
+                    aValue = a.id;
+                    bValue = b.id;
+                    break;
+                case 'category':
+                    aValue = a.categoryId || 0;
+                    bValue = b.categoryId || 0;
+                    break;
+                case 'points':
+                    aValue = a.points || 0;
+                    bValue = b.points || 0;
+                    break;
+                default:
+                    aValue = a.id;
+                    bValue = b.id;
+            }
+            
+            const result = aValue > bValue ? 1 : (aValue < bValue ? -1 : 0);
+            return this.reverseSort ? -result : result;
         });
         
         if (this.currentView === 'achievement') {

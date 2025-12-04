@@ -27,7 +27,14 @@
                 </div>
                 
                 <div id="versionSelector" class="version-selector" style="display: none;">
-                    <div class="version-single">
+                    <!-- 模式切换 -->
+                    <div class="mode-toggle">
+                        <button id="singleModeBtn" class="mode-btn active">📋 查看模式</button>
+                        <button id="versionCompareModeBtn" class="mode-btn">🔍 版本对比模式</button>
+                    </div>
+                    
+                    <!-- 单版本选择 -->
+                    <div id="singleVersionSection" class="version-single">
                         <div class="version-item">
                             <h3>📦 选择版本</h3>
                             <select id="versionSelect" class="version-select">
@@ -37,8 +44,32 @@
                         </div>
                     </div>
                     
+                    <!-- 双版本对比选择 -->
+                    <div id="compareVersionSection" class="version-compare" style="display: none;">
+                        <div class="version-pair">
+                            <div class="version-item">
+                                <h3>📦 旧版本</h3>
+                                <select id="oldVersionSelect" class="version-select">
+                                    <option value="">请选择旧版本</option>
+                                </select>
+                                <div class="version-info" id="oldVersionInfo"></div>
+                            </div>
+                            <div class="version-item">
+                                <h3>📦 新版本</h3>
+                                <select id="newVersionSelect" class="version-select">
+                                    <option value="">请选择新版本</option>
+                                </select>
+                                <div class="version-info" id="newVersionInfo"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="load-controls">
-                        <button id="loadRulesetsBtn" class="load-btn" disabled>📥 加载规则集</button>
+                        <button id="loadRulesetsBtn" class="load-btn" style="display: inline-block;" disabled>📅 加载规则集</button>
+                        <button id="compareRulesetsVersionBtn" class="load-btn" style="display: none;" disabled>📋 对比规则集</button>
+                        <button id="compareRulesVersionBtn" class="load-btn" style="display: none;" disabled>📝 对比规则</button>
+                        <button id="compareSubsetsBtn" class="load-btn" style="display: none;" disabled>📂 对比子集</button>
+                        <button id="compareSubsetRulesVersionBtn" class="load-btn" style="display: none;" disabled>🔧 对比子集规则</button>
                         <button id="refreshVersionsBtn" class="refresh-btn">🔄 刷新版本</button>
                     </div>
                 </div>
@@ -67,6 +98,12 @@
                             <button id="exportRulesetsBtn" class="export-btn">💾 导出规则集</button>
                         </div>
                     </div>
+                    <div style="margin: 15px 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button id="viewByRulesetBtn" class="mode-btn active">📋 按规则集查看</button>
+                        <button id="viewByRuleBtn" class="mode-btn">📝 按规则查看</button>
+                        <button id="viewBySubsetBtn" class="mode-btn">📂 按子集查看</button>
+                        <button id="viewBySubsetRuleBtn" class="mode-btn">🔧 按子集规则查看</button>
+                    </div>
                     <div class="ruleset-summary" id="rulesetSummary">
                         <!-- 规则集统计信息 -->
                     </div>
@@ -74,7 +111,19 @@
 
                 <!-- 搜索 -->
                 <div class="ruleset-filters">
-                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索规则集ID...">
+                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索ID...">
+                    <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <select id="sortSelect" class="sort-select" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                            <option value="id-asc">按ID排序 ↑</option>
+                            <option value="id-desc">按ID排序 ↓</option>
+                            <option value="ruleCount-asc">按规则数排序 ↑</option>
+                            <option value="ruleCount-desc">按规则数排序 ↓</option>
+                        </select>
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                            <input type="checkbox" id="reverseOrderCheck" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-size: 14px;">倒序查看</span>
+                        </label>
+                    </div>
                     <div style="margin-top: 10px;">
                         <button id="toggleCompareBtn" class="compare-btn">🔄 进入对比模式</button>
                         <button id="selectAllBtn" class="compare-btn" style="display: none;">☑️ 全选</button>
@@ -147,6 +196,66 @@
                 <div class="modal-body">
                     <div id="compareResults">
                         <!-- 对比结果将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 子集版本对比模态框 -->
+        <div id="subsetCompareModal" class="modal">
+            <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h3 id="modalSubsetCompareTitle">🔍 子集版本对比</h3>
+                    <button id="closeSubsetCompareModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="subsetCompareResults">
+                        <!-- 子集对比结果将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 规则集版本对比模态框 -->
+        <div id="rulesetCompareModal" class="modal">
+            <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h3 id="modalRulesetCompareTitle">🔍 规则集版本对比</h3>
+                    <button id="closeRulesetCompareModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="rulesetCompareResults">
+                        <!-- 规则集对比结果将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 规则版本对比模态框 -->
+        <div id="ruleCompareModal" class="modal">
+            <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h3 id="modalRuleCompareTitle">📝 规则版本对比</h3>
+                    <button id="closeRuleCompareModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="ruleCompareResults">
+                        <!-- 规则对比结果将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 子集规则版本对比模态框 -->
+        <div id="subsetRuleCompareModal" class="modal">
+            <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h3 id="modalSubsetRuleCompareTitle">🔧 子集规则版本对比</h3>
+                    <button id="closeSubsetRuleCompareModal" class="close-btn">✖️</button>
+                </div>
+                <div class="modal-body">
+                    <div id="subsetRuleCompareResults">
+                        <!-- 子集规则对比结果将在这里显示 -->
                     </div>
                 </div>
             </div>

@@ -5,12 +5,27 @@ class DeckRulesetSystem {
         this.dataPath = './data';
         this.allRulesets = [];
         this.filteredRulesets = [];
+        this.allRules = []; // 所有规则数据
+        this.filteredRules = []; // 过滤后的规则数据
+        this.allSubsets = []; // 所有子集数据
+        this.filteredSubsets = []; // 过滤后的子集数据
+        this.allSubsetRules = []; // 所有子集规则数据
+        this.filteredSubsetRules = []; // 过滤后的子集规则数据
         this.subsets = {}; // 存储子集数据
         this.subsetRules = {}; // 存储子集规则数据
         this.userNotes = { SUBSET: {} }; // 存储用户备注
         this.currentEditingRuleId = null; // 当前正在编辑备注的规则ID
-        this.compareMode = false; // 对比模式
+        this.compareMode = false; // 对比模式（规则集对比）
+        this.versionCompareMode = false; // 版本对比模式
+        this.viewMode = 'ruleset'; // 查看模式：'ruleset', 'rule', 'subset', 'subsetRule'
+        this.sortBy = 'id'; // 排序字段：'id' 或 'ruleCount'
+        this.sortOrder = 'asc'; // 排序顺序：'asc' 或 'desc'
+        this.reverseOrder = false; // 是否倒序查看
         this.selectedRulesets = new Set(); // 选中的规则集
+        this.oldVersionSubsets = []; // 旧版本子集数据
+        this.newVersionSubsets = []; // 新版本子集数据
+        this.oldVersionRulesets = []; // 旧版本规则集数据
+        this.newVersionRulesets = []; // 新版本规则集数据
         
         // 规则类型映射 (DeckRulesetRule.RuleType)
         this.ruleTypes = {
@@ -86,12 +101,44 @@ class DeckRulesetSystem {
         document.getElementById('loadRulesetsBtn').addEventListener('click', () => this.loadRulesets());
         document.getElementById('refreshVersionsBtn').addEventListener('click', () => this.detectVersions());
         
+        // 模式切换
+        document.getElementById('singleModeBtn').addEventListener('click', () => this.switchVersionMode('single'));
+        document.getElementById('versionCompareModeBtn').addEventListener('click', () => this.switchVersionMode('compare'));
+        
+        // 对比模式版本选择
+        document.getElementById('oldVersionSelect').addEventListener('change', () => this.onCompareVersionSelect());
+        document.getElementById('newVersionSelect').addEventListener('change', () => this.onCompareVersionSelect());
+        document.getElementById('compareRulesetsVersionBtn').addEventListener('click', () => this.compareVersionRulesets());
+        document.getElementById('compareRulesVersionBtn').addEventListener('click', () => this.compareVersionRules());
+        document.getElementById('compareSubsetsBtn').addEventListener('click', () => this.compareVersionSubsets());
+        document.getElementById('compareSubsetRulesVersionBtn').addEventListener('click', () => this.compareVersionSubsetRules());
+        
         // 规则集操作
         document.getElementById('backToVersionBtn').addEventListener('click', () => this.backToVersionSelect());
         document.getElementById('exportRulesetsBtn').addEventListener('click', () => this.exportRulesets());
         
+        // 查看模式切换
+        document.getElementById('viewByRulesetBtn').addEventListener('click', () => this.switchViewMode('ruleset'));
+        document.getElementById('viewByRuleBtn').addEventListener('click', () => this.switchViewMode('rule'));
+        document.getElementById('viewBySubsetBtn').addEventListener('click', () => this.switchViewMode('subset'));
+        document.getElementById('viewBySubsetRuleBtn').addEventListener('click', () => this.switchViewMode('subsetRule'));
+        
         // 搜索
         document.getElementById('searchInput').addEventListener('input', () => this.filterRulesets());
+        
+        // 排序
+        document.getElementById('sortSelect').addEventListener('change', (e) => {
+            const [field, order] = e.target.value.split('-');
+            this.sortBy = field;
+            this.sortOrder = order;
+            this.filterRulesets();
+        });
+        
+        // 倒序查看
+        document.getElementById('reverseOrderCheck').addEventListener('change', (e) => {
+            this.reverseOrder = e.target.checked;
+            this.displayRulesets();
+        });
         
         // 模态框
         document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
@@ -122,6 +169,48 @@ class DeckRulesetSystem {
         document.getElementById('compareModal').addEventListener('click', (e) => {
             if (e.target.id === 'compareModal') this.closeCompareModal();
         });
+        
+        // 子集版本对比模态框
+        document.getElementById('closeSubsetCompareModal').addEventListener('click', () => this.closeSubsetCompareModal());
+        document.getElementById('subsetCompareModal').addEventListener('click', (e) => {
+            if (e.target.id === 'subsetCompareModal') this.closeSubsetCompareModal();
+        });
+        
+        // 规则集版本对比模态框
+        const closeRulesetCompareBtn = document.getElementById('closeRulesetCompareModal');
+        const rulesetCompareModalEl = document.getElementById('rulesetCompareModal');
+        if (closeRulesetCompareBtn) {
+            closeRulesetCompareBtn.addEventListener('click', () => this.closeRulesetCompareModal());
+        }
+        if (rulesetCompareModalEl) {
+            rulesetCompareModalEl.addEventListener('click', (e) => {
+                if (e.target.id === 'rulesetCompareModal') this.closeRulesetCompareModal();
+            });
+        }
+        
+        // 规则版本对比模态框
+        const closeRuleCompareBtn = document.getElementById('closeRuleCompareModal');
+        const ruleCompareModalEl = document.getElementById('ruleCompareModal');
+        if (closeRuleCompareBtn) {
+            closeRuleCompareBtn.addEventListener('click', () => this.closeRuleCompareModal());
+        }
+        if (ruleCompareModalEl) {
+            ruleCompareModalEl.addEventListener('click', (e) => {
+                if (e.target.id === 'ruleCompareModal') this.closeRuleCompareModal();
+            });
+        }
+        
+        // 子集规则版本对比模态框
+        const closeSubsetRuleCompareBtn = document.getElementById('closeSubsetRuleCompareModal');
+        const subsetRuleCompareModalEl = document.getElementById('subsetRuleCompareModal');
+        if (closeSubsetRuleCompareBtn) {
+            closeSubsetRuleCompareBtn.addEventListener('click', () => this.closeSubsetRuleCompareModal());
+        }
+        if (subsetRuleCompareModalEl) {
+            subsetRuleCompareModalEl.addEventListener('click', (e) => {
+                if (e.target.id === 'subsetRuleCompareModal') this.closeSubsetRuleCompareModal();
+            });
+        }
     }
     
     // 加载用户备注
@@ -218,6 +307,7 @@ class DeckRulesetSystem {
     }
     
     populateVersionSelector() {
+        // 单版本选择器
         const select = document.getElementById('versionSelect');
         select.innerHTML = '<option value="">请选择版本</option>';
         this.availableVersions.forEach(version => {
@@ -225,6 +315,25 @@ class DeckRulesetSystem {
             option.value = version;
             option.textContent = `版本 ${version}`;
             select.appendChild(option);
+        });
+        
+        // 对比模式选择器
+        const oldSelect = document.getElementById('oldVersionSelect');
+        const newSelect = document.getElementById('newVersionSelect');
+        
+        oldSelect.innerHTML = '<option value="">请选择旧版本</option>';
+        newSelect.innerHTML = '<option value="">请选择新版本</option>';
+        
+        this.availableVersions.forEach(version => {
+            const oldOption = document.createElement('option');
+            oldOption.value = version;
+            oldOption.textContent = `版本 ${version}`;
+            oldSelect.appendChild(oldOption);
+            
+            const newOption = document.createElement('option');
+            newOption.value = version;
+            newOption.textContent = `版本 ${version}`;
+            newSelect.appendChild(newOption);
         });
     }
     
@@ -338,6 +447,7 @@ class DeckRulesetSystem {
             
             this.updateProgress(95, '正在关联数据...');
             this.allRulesets = this.associateData(rulesets, rules, ruleSubsets);
+            this.allRules = rules; // 保存原始规则数据用于按规则查看
             console.log('✅ 数据关联完成:', this.allRulesets.length);
             
             this.updateProgress(100, '加载完成！');
@@ -380,6 +490,12 @@ class DeckRulesetSystem {
             subsetData.Records.forEach(record => {
                 this.subsets[record.m_ID] = record;
             });
+            // 填充 allSubsets 用于按子集查看
+            this.allSubsets = subsetData.Records.map(record => ({
+                m_id: record.m_ID,
+                m_assetFlags: record.m_assetFlags
+            }));
+            console.log(`✅ 加载了 ${this.allSubsets.length} 个子集`);
         }
         
         // 加载 SUBSET_RULE.json
@@ -397,6 +513,8 @@ class DeckRulesetSystem {
                 }
                 this.subsetRules[record.m_subsetId].push(record);
             });
+            // 填充 allSubsetRules 用于按子集查看
+            this.allSubsetRules = subsetRuleData.Records;
             console.log(`✅ 加载了 ${subsetRuleData.Records.length} 条子集规则`);
         }
     }
@@ -487,6 +605,11 @@ class DeckRulesetSystem {
         document.getElementById('loadProgressSection').style.display = 'none';
         document.getElementById('rulesetListSection').style.display = 'block';
         
+        // 初始化过滤数组
+        this.filteredSubsets = [...this.allSubsets];
+        this.filteredRules = [...this.allRules];
+        this.filteredSubsetRules = [...this.allSubsetRules];
+        
         this.updateRulesetSummary();
         this.filterRulesets();
     }
@@ -510,22 +633,255 @@ class DeckRulesetSystem {
     filterRulesets() {
         const searchText = document.getElementById('searchInput').value.toLowerCase();
         
-        this.filteredRulesets = this.allRulesets.filter(ruleset => {
-            return !searchText || ruleset.id.toString().includes(searchText);
-        });
+        if (this.viewMode === 'subset') {
+            // 按子集查看模式：搜索子集ID
+            this.filteredSubsets = this.allSubsets.filter(subset => {
+                return !searchText || subset.m_id.toString().includes(searchText);
+            });
+            
+            // 排序子集
+            this.sortItems(this.filteredSubsets, 'subset');
+        } else if (this.viewMode === 'rule') {
+            // 按规则查看模式：搜索规则ID或规则集ID
+            this.filteredRules = this.allRules.filter(rule => {
+                return !searchText || rule.m_ID.toString().includes(searchText) || rule.m_deckRulesetId.toString().includes(searchText);
+            });
+            
+            // 排序规则
+            this.sortItems(this.filteredRules, 'rule');
+        } else if (this.viewMode === 'subsetRule') {
+            // 按子集规则查看模式：搜索规则ID或子集ID
+            this.filteredSubsetRules = this.allSubsetRules.filter(rule => {
+                return !searchText || rule.m_ID.toString().includes(searchText) || rule.m_subsetId.toString().includes(searchText);
+            });
+            
+            // 排序子集规则
+            this.sortItems(this.filteredSubsetRules, 'subsetRule');
+        } else {
+            // 按规则集查看模式：搜索规则集ID
+            this.filteredRulesets = this.allRulesets.filter(ruleset => {
+                return !searchText || ruleset.id.toString().includes(searchText);
+            });
+            
+            // 排序规则集
+            this.sortItems(this.filteredRulesets, 'ruleset');
+        }
         
         this.displayRulesets();
+    }
+    
+    sortItems(items, type) {
+        items.sort((a, b) => {
+            let aValue, bValue;
+            
+            if (this.sortBy === 'id') {
+                if (type === 'ruleset') {
+                    aValue = a.id;
+                    bValue = b.id;
+                } else if (type === 'rule') {
+                    aValue = a.m_ID;
+                    bValue = b.m_ID;
+                } else if (type === 'subset') {
+                    aValue = a.m_id;
+                    bValue = b.m_id;
+                } else if (type === 'subsetRule') {
+                    aValue = a.m_ID;
+                    bValue = b.m_ID;
+                }
+            } else if (this.sortBy === 'ruleCount') {
+                if (type === 'ruleset') {
+                    aValue = a.ruleCount;
+                    bValue = b.ruleCount;
+                } else if (type === 'rule') {
+                    aValue = a.m_deckRulesetId;
+                    bValue = b.m_deckRulesetId;
+                } else if (type === 'subset') {
+                    // 子集模式：计算该子集的规则数量
+                    aValue = this.allSubsetRules.filter(r => r.m_subsetId === a.m_id).length;
+                    bValue = this.allSubsetRules.filter(r => r.m_subsetId === b.m_id).length;
+                } else if (type === 'subsetRule') {
+                    aValue = a.m_subsetId;
+                    bValue = b.m_subsetId;
+                }
+            }
+            
+            if (this.sortOrder === 'asc') {
+                return aValue - bValue;
+            } else {
+                return bValue - aValue;
+            }
+        });
     }
     
     displayRulesets() {
         const container = document.getElementById('rulesetList');
         
+        // 按规则查看模式
+        if (this.viewMode === 'rule') {
+            if (this.filteredRules.length === 0) {
+                container.innerHTML = '<div class="no-results">没有找到符合条件的规则</div>';
+                return;
+            }
+            
+            let displayRules = [...this.filteredRules];
+            if (this.reverseOrder) {
+                displayRules.reverse();
+            }
+            
+            container.innerHTML = displayRules.map(rule => {
+                const ruleTypeName = this.ruleTypes[rule.m_ruleType] || `未知类型(${rule.m_ruleType})`;
+                
+                return `
+                <div class="ruleset-item" onclick="rulesetSystem.showRuleDetails(${rule.m_ID})" style="cursor: pointer;">
+                    <div class="ruleset-item-header">
+                        <div class="ruleset-name">
+                            规则 ${rule.m_ID} - ${ruleTypeName}
+                        </div>
+                        <div class="ruleset-badge">规则集 ${rule.m_deckRulesetId}</div>
+                    </div>
+                    <div class="ruleset-info">
+                        <div class="ruleset-stat">
+                            <span class="stat-label">规则ID:</span>
+                            <span class="stat-value">${rule.m_ID}</span>
+                        </div>
+                        <div class="ruleset-stat">
+                            <span class="stat-label">规则集ID:</span>
+                            <span class="stat-value">${rule.m_deckRulesetId}</span>
+                        </div>
+                        <div class="ruleset-stat">
+                            <span class="stat-label">类型:</span>
+                            <span class="stat-value">${rule.m_ruleType}</span>
+                        </div>
+                        ${rule.m_appliesToSubsetId ? `
+                        <div class="ruleset-stat">
+                            <span class="stat-label">应用子集:</span>
+                            <span class="stat-value">${rule.m_appliesToSubsetId}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                `;
+            }).join('');
+            return;
+        }
+        
+        // 按子集规则查看模式
+        if (this.viewMode === 'subsetRule') {
+            if (this.filteredSubsetRules.length === 0) {
+                container.innerHTML = '<div class="no-results">没有找到符合条件的子集规则</div>';
+                return;
+            }
+            
+            let displaySubsetRules = [...this.filteredSubsetRules];
+            if (this.reverseOrder) {
+                displaySubsetRules.reverse();
+            }
+            
+            container.innerHTML = displaySubsetRules.map(rule => {
+                const tagName = rule.m_tagId ? (window.getGameTagName ? window.getGameTagName(rule.m_tagId) : rule.m_tagId) : '无';
+                const ruleTypeName = this.subsetRuleTypes ? (this.subsetRuleTypes[rule.m_ruleType] || `类型${rule.m_ruleType}`) : `类型${rule.m_ruleType}`;
+                
+                return `
+                <div class="ruleset-item" style="cursor: pointer;">
+                    <div class="ruleset-item-header">
+                        <div class="ruleset-name">
+                            子集规则 ${rule.m_ID} - ${ruleTypeName}
+                        </div>
+                        <div class="ruleset-badge">子集 ${rule.m_subsetId}</div>
+                    </div>
+                    <div class="ruleset-info">
+                        <div class="ruleset-stat">
+                            <span class="stat-label">规则ID:</span>
+                            <span class="stat-value">${rule.m_ID}</span>
+                        </div>
+                        <div class="ruleset-stat">
+                            <span class="stat-label">子集ID:</span>
+                            <span class="stat-value">${rule.m_subsetId}</span>
+                        </div>
+                        ${rule.m_tagId ? `
+                        <div class="ruleset-stat">
+                            <span class="stat-label">应用标签:</span>
+                            <span class="stat-value" style="cursor: pointer; color: #3498db;" onclick="rulesetSystem.showTagDetails(${rule.m_tagId}); event.stopPropagation();">${tagName}</span>
+                        </div>
+                        ` : ''}
+                        ${rule.m_minValue !== undefined || rule.m_maxValue !== undefined ? `
+                        <div class="ruleset-stat">
+                            <span class="stat-label">值范围:</span>
+                            <span class="stat-value">${rule.m_minValue ?? 0} - ${rule.m_maxValue ?? 0}</span>
+                        </div>
+                        ` : ''}
+                        ${rule.m_ruleIsNot !== undefined ? `
+                        <div class="ruleset-stat">
+                            <span class="stat-label">反转规则:</span>
+                            <span class="stat-value">${rule.m_ruleIsNot ? '✅ 是' : '❌ 否'}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                `;
+            }).join('');
+            return;
+        }
+        
+        // 按子集查看模式
+        if (this.viewMode === 'subset') {
+            if (this.filteredSubsets.length === 0) {
+                container.innerHTML = '<div class="no-results">没有找到符合条件的子集</div>';
+                return;
+            }
+            
+            let displaySubsets = [...this.filteredSubsets];
+            if (this.reverseOrder) {
+                displaySubsets.reverse();
+            }
+            
+            container.innerHTML = displaySubsets.map(subset => {
+                const subsetNote = this.userNotes.SUBSET[subset.m_id] || '';
+                
+                // 查找该子集的所有规则
+                const subsetRules = this.allSubsetRules.filter(r => r.m_subsetId === subset.m_id);
+                
+                return `
+                <div class="ruleset-item" onclick="rulesetSystem.showSubsetDetails(${subset.m_id})">
+                    <div class="ruleset-item-header">
+                        <div class="ruleset-name">
+                            子集 ${subset.m_id}
+                            ${subsetNote ? `<span style="color: #27ae60; font-size: 13px; margin-left: 8px;">(📝 ${subsetNote})</span>` : ''}
+                        </div>
+                        <div class="ruleset-badge">${subsetRules.length} 条规则</div>
+                    </div>
+                    <div class="ruleset-info">
+                        <div class="ruleset-stat">
+                            <span class="stat-label">子集ID:</span>
+                            <span class="stat-value">${subset.m_id}</span>
+                        </div>
+                        <div class="ruleset-stat">
+                            <span class="stat-label">资产标志:</span>
+                            <span class="stat-value">${subset.m_assetFlags ?? 0}</span>
+                        </div>
+                        <div class="ruleset-stat">
+                            <span class="stat-label">规则数量:</span>
+                            <span class="stat-value">${subsetRules.length}</span>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            return;
+        }
+        
+        // 按规则集查看模式（原有逻辑）
         if (this.filteredRulesets.length === 0) {
             container.innerHTML = '<div class="no-results">没有找到符合条件的规则集</div>';
             return;
         }
         
-        container.innerHTML = this.filteredRulesets.map(ruleset => {
+        let displayRulesets = [...this.filteredRulesets];
+        if (this.reverseOrder) {
+            displayRulesets.reverse();
+        }
+        
+        container.innerHTML = displayRulesets.map(ruleset => {
             const rulesetNote = this.userNotes.DECK_RULESET[ruleset.id] || '';
             const isSelected = this.selectedRulesets.has(ruleset.id);
             
@@ -1276,6 +1632,1547 @@ class DeckRulesetSystem {
         const sorted2 = [...arr2].sort();
         
         return sorted1.every((val, index) => val === sorted2[index]);
+    }
+    
+    // 切换版本模式（查看/对比）
+    switchVersionMode(mode) {
+        const singleBtn = document.getElementById('singleModeBtn');
+        const compareBtn = document.getElementById('versionCompareModeBtn');
+        const singleSection = document.getElementById('singleVersionSection');
+        const compareSection = document.getElementById('compareVersionSection');
+        const loadBtn = document.getElementById('loadRulesetsBtn');
+        const compareRulesetsVersionBtn = document.getElementById('compareRulesetsVersionBtn');
+        const compareRulesVersionBtn = document.getElementById('compareRulesVersionBtn');
+        const compareSubsetsBtn = document.getElementById('compareSubsetsBtn');
+        const compareSubsetRulesVersionBtn = document.getElementById('compareSubsetRulesVersionBtn');
+        
+        if (mode === 'single') {
+            this.versionCompareMode = false;
+            singleBtn.classList.add('active');
+            compareBtn.classList.remove('active');
+            singleSection.style.display = 'block';
+            compareSection.style.display = 'none';
+            loadBtn.style.display = 'inline-block';
+            compareRulesetsVersionBtn.style.display = 'none';
+            compareRulesVersionBtn.style.display = 'none';
+            compareSubsetsBtn.style.display = 'none';
+            compareSubsetRulesVersionBtn.style.display = 'none';
+        } else {
+            this.versionCompareMode = true;
+            singleBtn.classList.remove('active');
+            compareBtn.classList.add('active');
+            singleSection.style.display = 'none';
+            compareSection.style.display = 'block';
+            loadBtn.style.display = 'none';
+            compareRulesetsVersionBtn.style.display = 'inline-block';
+            compareRulesVersionBtn.style.display = 'inline-block';
+            compareSubsetsBtn.style.display = 'inline-block';
+            compareSubsetRulesVersionBtn.style.display = 'inline-block';
+            
+            // 自动选择最新的两个版本
+            if (this.availableVersions.length >= 2) {
+                document.getElementById('newVersionSelect').value = this.availableVersions[0]; // 最新版本
+                document.getElementById('oldVersionSelect').value = this.availableVersions[1]; // 次新版本
+                this.onCompareVersionSelect();
+            }
+        }
+    }
+    
+    // 对比模式版本选择
+    async onCompareVersionSelect() {
+        const oldVersion = document.getElementById('oldVersionSelect').value;
+        const newVersion = document.getElementById('newVersionSelect').value;
+        const compareRulesetsVersionBtn = document.getElementById('compareRulesetsVersionBtn');
+        const compareRulesVersionBtn = document.getElementById('compareRulesVersionBtn');
+        const compareSubsetsBtn = document.getElementById('compareSubsetsBtn');
+        const compareSubsetRulesVersionBtn = document.getElementById('compareSubsetRulesVersionBtn');
+        
+        let oldValid = false;
+        let newValid = false;
+        
+        if (oldVersion) {
+            oldValid = await this.checkVersionFilesForInfo(oldVersion, 'oldVersionInfo');
+        } else {
+            document.getElementById('oldVersionInfo').innerHTML = '';
+        }
+        
+        if (newVersion) {
+            newValid = await this.checkVersionFilesForInfo(newVersion, 'newVersionInfo');
+        } else {
+            document.getElementById('newVersionInfo').innerHTML = '';
+        }
+        
+        const enabled = oldValid && newValid && oldVersion !== newVersion;
+        compareRulesetsVersionBtn.disabled = !enabled;
+        compareRulesVersionBtn.disabled = !enabled;
+        compareSubsetsBtn.disabled = !enabled;
+        compareSubsetRulesVersionBtn.disabled = !enabled;
+    }
+    
+    // 检查版本文件（带info元素ID参数）
+    async checkVersionFilesForInfo(version, infoElementId) {
+        try {
+            window.dataManager.setVersion(version);
+            
+            const missingFiles = [];
+            
+            try {
+                await window.dataManager.loadFile('SUBSET', version);
+            } catch (error) {
+                missingFiles.push('SUBSET.json');
+            }
+            
+            try {
+                await window.dataManager.loadFile('SUBSET_RULE', version);
+            } catch (error) {
+                missingFiles.push('SUBSET_RULE.json');
+            }
+            
+            const isValid = missingFiles.length === 0;
+            
+            const infoElement = document.getElementById(infoElementId);
+            if (infoElement) {
+                if (isValid) {
+                    infoElement.innerHTML = `
+                        <div><strong>版本号:</strong> ${version}</div>
+                        <div><strong>状态:</strong> <span class="status-ready">✅ 准备就绪</span></div>
+                    `;
+                } else {
+                    infoElement.innerHTML = `
+                        <div><strong>版本号:</strong> ${version}</div>
+                        <div><strong>状态:</strong> <span class="status-error">❌ 缺少文件: ${missingFiles.join(', ')}</span></div>
+                    `;
+                }
+            }
+            
+            return isValid;
+        } catch (error) {
+            const infoElement = document.getElementById(infoElementId);
+            if (infoElement) {
+                infoElement.innerHTML = `
+                    <div><strong>版本号:</strong> ${version}</div>
+                    <div><strong>状态:</strong> <span class="status-error">❌ 检测失败: ${error.message}</span></div>
+                `;
+            }
+            return false;
+        }
+    }
+    
+    // 对比版本间的子集
+    async compareVersionSubsets() {
+        const oldVersion = document.getElementById('oldVersionSelect').value;
+        const newVersion = document.getElementById('newVersionSelect').value;
+        
+        console.log('🔍 开始对比子集:', oldVersion, 'vs', newVersion);
+        
+        try {
+            this.showProgressSection();
+            
+            // 加载旧版本数据
+            this.updateProgress(25, '正在加载旧版本子集...');
+            this.oldVersionSubsets = await this.loadVersionSubsets(oldVersion);
+            
+            // 加载新版本数据
+            this.updateProgress(60, '正在加载新版本子集...');
+            this.newVersionSubsets = await this.loadVersionSubsets(newVersion);
+            
+            // 对比数据
+            this.updateProgress(90, '正在对比数据...');
+            const compareResults = this.performSubsetComparison(this.oldVersionSubsets, this.newVersionSubsets);
+            
+            this.updateProgress(100, '对比完成！');
+            
+            // 延迟显示结果
+            setTimeout(() => {
+                this.hideProgressSection();
+                this.showSubsetCompareResults(oldVersion, newVersion, compareResults);
+            }, 500);
+            
+        } catch (error) {
+            console.error('对比子集失败:', error);
+            alert('对比子集失败: ' + error.message);
+            this.hideProgressSection();
+        }
+    }
+    
+    // 加载指定版本的子集数据
+    async loadVersionSubsets(version) {
+        window.dataManager.setVersion(version);
+        
+        // 加载子集数据
+        const subsetData = await window.dataManager.loadFile('SUBSET', version);
+        const subsets = subsetData?.Records || [];
+        
+        // 加载子集规则数据
+        const subsetRuleData = await window.dataManager.loadFile('SUBSET_RULE', version);
+        const allSubsetRules = subsetRuleData?.Records || [];
+        
+        // 为每个子集关联规则
+        return subsets.map(subset => {
+            const rules = allSubsetRules.filter(rule => rule.m_subsetId === subset.m_ID);
+            return {
+                id: subset.m_ID,
+                assetFlags: subset.m_assetFlags ?? 0,
+                ruleCount: rules.length,
+                rules: rules.map(rule => ({
+                    id: rule.m_ID,
+                    subsetId: rule.m_subsetId,
+                    ruleType: rule.m_ruleType,
+                    ruleTypeName: this.subsetRuleTypes[rule.m_ruleType] || `未知类型(${rule.m_ruleType})`,
+                    tagId: rule.m_tagId,
+                    minValue: rule.m_minValue,
+                    maxValue: rule.m_maxValue,
+                    intValue: rule.m_intValue,
+                    stringValue: rule.m_stringValue,
+                    ruleIsNot: rule.m_ruleIsNot
+                }))
+            };
+        });
+    }
+    
+    // 执行子集对比
+    performSubsetComparison(oldSubsets, newSubsets) {
+        const oldMap = new Map(oldSubsets.map(s => [s.id, s]));
+        const newMap = new Map(newSubsets.map(s => [s.id, s]));
+        
+        const added = [];
+        const removed = [];
+        const modified = [];
+        
+        // 查找新增和修改的子集
+        newSubsets.forEach(newSubset => {
+            const oldSubset = oldMap.get(newSubset.id);
+            if (!oldSubset) {
+                added.push(newSubset);
+            } else {
+                const changes = this.getSubsetChanges(oldSubset, newSubset);
+                if (changes.length > 0) {
+                    modified.push({ old: oldSubset, new: newSubset, changes });
+                }
+            }
+        });
+        
+        // 查找移除的子集
+        oldSubsets.forEach(oldSubset => {
+            if (!newMap.has(oldSubset.id)) {
+                removed.push(oldSubset);
+            }
+        });
+        
+        return { added, removed, modified };
+    }
+    
+    // 获取子集变化
+    getSubsetChanges(oldSubset, newSubset) {
+        const changes = [];
+        
+        // 检查资产标志变化
+        if (oldSubset.assetFlags !== newSubset.assetFlags) {
+            changes.push({
+                field: '资产标志',
+                oldValue: oldSubset.assetFlags,
+                newValue: newSubset.assetFlags
+            });
+        }
+        
+        // 检查规则数量变化
+        if (oldSubset.ruleCount !== newSubset.ruleCount) {
+            changes.push({
+                field: '规则数量',
+                oldValue: oldSubset.ruleCount,
+                newValue: newSubset.ruleCount
+            });
+        }
+        
+        // 详细对比规则
+        const ruleChanges = this.compareSubsetRules(oldSubset.rules, newSubset.rules);
+        if (ruleChanges.length > 0) {
+            changes.push({
+                field: '规则详情',
+                oldValue: ruleChanges.filter(c => c.type === 'removed').length + ' 条移除',
+                newValue: ruleChanges.filter(c => c.type === 'added').length + ' 条新增',
+                details: ruleChanges
+            });
+        }
+        
+        return changes;
+    }
+    
+    // 对比子集规则
+    compareSubsetRules(oldRules, newRules) {
+        const changes = [];
+        const oldRuleMap = new Map(oldRules.map(r => [r.id, r]));
+        const newRuleMap = new Map(newRules.map(r => [r.id, r]));
+        
+        // 查找新增的规则
+        newRules.forEach(newRule => {
+            if (!oldRuleMap.has(newRule.id)) {
+                changes.push({ type: 'added', rule: newRule });
+            }
+        });
+        
+        // 查找移除的规则
+        oldRules.forEach(oldRule => {
+            if (!newRuleMap.has(oldRule.id)) {
+                changes.push({ type: 'removed', rule: oldRule });
+            }
+        });
+        
+        return changes;
+    }
+    
+    // 显示子集对比结果
+    showSubsetCompareResults(oldVersion, newVersion, results) {
+        const modal = document.getElementById('subsetCompareModal');
+        const resultsContainer = document.getElementById('subsetCompareResults');
+        
+        let html = `
+            <div style="margin-bottom: 25px;">
+                <h3>📊 对比摘要</h3>
+                <div style="display: flex; gap: 20px; margin-top: 15px;">
+                    <div style="flex: 1; padding: 15px; background: #d4edda; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #155724;">${results.added.length}</div>
+                        <div style="color: #155724;">新增子集</div>
+                    </div>
+                    <div style="flex: 1; padding: 15px; background: #f8d7da; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #721c24;">${results.removed.length}</div>
+                        <div style="color: #721c24;">移除子集</div>
+                    </div>
+                    <div style="flex: 1; padding: 15px; background: #fff3cd; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #856404;">${results.modified.length}</div>
+                        <div style="color: #856404;">修改子集</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4>对比版本</h4>
+                <div style="display: flex; gap: 15px;">
+                    <span style="background: #e9ecef; padding: 8px 15px; border-radius: 4px;">旧版本: ${oldVersion}</span>
+                    <span style="background: #e9ecef; padding: 8px 15px; border-radius: 4px;">新版本: ${newVersion}</span>
+                </div>
+            </div>
+        `;
+        
+        // 显示新增的子集
+        if (results.added.length > 0) {
+            html += `
+                <div style="margin-bottom: 25px;">
+                    <h4 style="color: #155724;">➕ 新增的子集 (${results.added.length})</h4>
+                    ${results.added.map(subset => {
+                        const note = this.userNotes.SUBSET[subset.id] || '';
+                        return `
+                            <div style="padding: 15px; margin-bottom: 15px; background: #d4edda; border-left: 4px solid #28a745; border-radius: 4px;">
+                                <div style="font-weight: bold; margin-bottom: 10px;">
+                                    子集 ${subset.id}${note ? ` (${note})` : ''}
+                                </div>
+                                <div style="margin: 8px 0; color: #155724;">
+                                    <strong>资产标志:</strong> ${subset.assetFlags}
+                                </div>
+                                <div style="margin: 8px 0; color: #155724;">
+                                    <strong>规则数量:</strong> ${subset.ruleCount}
+                                </div>
+                                ${subset.rules.length > 0 ? `
+                                    <div style="margin: 8px 0; padding: 10px; background: white; border-radius: 4px;">
+                                        <strong>规则详情:</strong>
+                                        <div style="margin-top: 8px;">
+                                            ${subset.rules.map(rule => {
+                                                const tagInfo = rule.tagId ? ` | 标签: <span class="tag-link" data-tag-id="${rule.tagId}" style="color: #0066cc; cursor: pointer; text-decoration: underline;">${rule.tagId}</span>` : '';
+                                                return `<div style="color: #155724; padding: 5px;">• ${rule.ruleTypeName} (ID: <span class="rule-link" data-rule="${encodeURIComponent(JSON.stringify(rule))}" style="color: #0066cc; cursor: pointer; text-decoration: underline;">${rule.id}</span>)${tagInfo}</div>`;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+        
+        // 显示移除的子集
+        if (results.removed.length > 0) {
+            html += `
+                <div style="margin-bottom: 25px;">
+                    <h4 style="color: #721c24;">➖ 移除的子集 (${results.removed.length})</h4>
+                    ${results.removed.map(subset => {
+                        const note = this.userNotes.SUBSET[subset.id] || '';
+                        return `
+                            <div style="padding: 15px; margin-bottom: 15px; background: #f8d7da; border-left: 4px solid #dc3545; border-radius: 4px;">
+                                <div style="font-weight: bold; margin-bottom: 10px;">
+                                    子集 ${subset.id}${note ? ` (${note})` : ''}
+                                </div>
+                                <div style="margin: 8px 0; color: #721c24;">
+                                    <strong>资产标志:</strong> ${subset.assetFlags}
+                                </div>
+                                <div style="margin: 8px 0; color: #721c24;">
+                                    <strong>规则数量:</strong> ${subset.ruleCount}
+                                </div>
+                                ${subset.rules.length > 0 ? `
+                                    <div style="margin: 8px 0; padding: 10px; background: white; border-radius: 4px;">
+                                        <strong>规则详情:</strong>
+                                        <div style="margin-top: 8px;">
+                                            ${subset.rules.map(rule => {
+                                                const tagInfo = rule.tagId ? ` | 标签: <span class="tag-link" data-tag-id="${rule.tagId}" style="color: #0066cc; cursor: pointer; text-decoration: underline;">${rule.tagId}</span>` : '';
+                                                return `<div style="color: #721c24; padding: 5px;">• ${rule.ruleTypeName} (ID: <span class="rule-link" data-rule="${encodeURIComponent(JSON.stringify(rule))}" style="color: #0066cc; cursor: pointer; text-decoration: underline;">${rule.id}</span>)${tagInfo}</div>`;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+        
+        // 显示修改的子集
+        if (results.modified.length > 0) {
+            html += `
+                <div style="margin-bottom: 25px;">
+                    <h4 style="color: #856404;">✏️ 修改的子集 (${results.modified.length})</h4>
+                    ${results.modified.map(mod => {
+                        const note = this.userNotes.SUBSET[mod.new.id] || '';
+                        return `
+                            <div style="padding: 15px; margin-bottom: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                                <div style="font-weight: bold; margin-bottom: 10px;">
+                                    子集 ${mod.new.id}${note ? ` (${note})` : ''}
+                                </div>
+                                ${mod.changes.map(change => {
+                                    if (change.field === '规则详情' && change.details) {
+                                        return `
+                                            <div style="margin: 8px 0; padding: 10px; background: white; border-radius: 4px;">
+                                                <strong>${change.field}:</strong>
+                                                <div style="margin-top: 8px;">
+                                                    ${change.details.map(detail => {
+                                                        if (detail.type === 'added') {
+                                                            const tagInfo = detail.rule.tagId ? ` | 标签: <span class="tag-link" data-tag-id="${detail.rule.tagId}" style="color: #0066cc; cursor: pointer; text-decoration: underline;">${detail.rule.tagId}</span>` : '';
+                                                            return `<div style="color: #155724; padding: 5px;">➕ 新增规则: ${detail.rule.ruleTypeName} (ID: <span class="rule-link" data-rule="${encodeURIComponent(JSON.stringify(detail.rule))}" style="color: #0066cc; cursor: pointer; text-decoration: underline;">${detail.rule.id}</span>)${tagInfo}</div>`;
+                                                        } else {
+                                                            const tagInfo = detail.rule.tagId ? ` | 标签: <span class="tag-link" data-tag-id="${detail.rule.tagId}" style="color: #0066cc; cursor: pointer; text-decoration: underline;">${detail.rule.tagId}</span>` : '';
+                                                            return `<div style="color: #721c24; padding: 5px;">➖ 移除规则: ${detail.rule.ruleTypeName} (ID: <span class="rule-link" data-rule="${encodeURIComponent(JSON.stringify(detail.rule))}" style="color: #0066cc; cursor: pointer; text-decoration: underline;">${detail.rule.id}</span>)${tagInfo}</div>`;
+                                                        }
+                                                    }).join('')}
+                                                </div>
+                                            </div>
+                                        `;
+                                    } else {
+                                        return `
+                                            <div style="margin: 8px 0; color: #856404;">
+                                                <strong>${change.field}:</strong>
+                                                <span style="text-decoration: line-through; color: #721c24;">${change.oldValue}</span>
+                                                <span style="margin: 0 8px;">→</span>
+                                                <span style="color: #155724;">${change.newValue}</span>
+                                            </div>
+                                        `;
+                                    }
+                                }).join('')}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+        
+        resultsContainer.innerHTML = html;
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        
+        // 为规则链接添加点击事件
+        resultsContainer.querySelectorAll('.rule-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const ruleData = JSON.parse(decodeURIComponent(link.getAttribute('data-rule')));
+                this.showRuleDetails(ruleData);
+            });
+        });
+        
+        // 为标签链接添加点击事件
+        resultsContainer.querySelectorAll('.tag-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const tagId = parseInt(link.getAttribute('data-tag-id'));
+                this.showTagDetails(tagId);
+            });
+        });
+    }
+    
+    // 关闭子集对比模态框
+    closeSubsetCompareModal() {
+        const modal = document.getElementById('subsetCompareModal');
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+    
+    closeRuleCompareModal() {
+        const modal = document.getElementById('ruleCompareModal');
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+    
+    closeSubsetRuleCompareModal() {
+        const modal = document.getElementById('subsetRuleCompareModal');
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+    
+    // 对比规则版本
+    async compareVersionRules() {
+        const oldVersion = document.getElementById('oldVersionSelect').value;
+        const newVersion = document.getElementById('newVersionSelect').value;
+        
+        if (!oldVersion || !newVersion) {
+            alert('请选择两个版本进行对比');
+            return;
+        }
+        
+        if (oldVersion === newVersion) {
+            alert('请选择不同的版本进行对比');
+            return;
+        }
+        
+        try {
+            this.showProgressSection();
+            
+            // 加载旧版本规则
+            this.updateProgress(25, '正在加载旧版本规则...');
+            const oldRules = await this.loadVersionRules(oldVersion);
+            
+            // 加载新版本规则
+            this.updateProgress(60, '正在加载新版本规则...');
+            const newRules = await this.loadVersionRules(newVersion);
+            
+            // 对比数据
+            this.updateProgress(90, '正在对比数据...');
+            const compareResults = this.performRulesComparison(oldRules, newRules);
+            
+            this.updateProgress(100, '对比完成！');
+            
+            // 延迟显示结果
+            setTimeout(() => {
+                this.hideProgressSection();
+                this.showRulesCompareResults(oldVersion, newVersion, compareResults);
+            }, 500);
+            
+        } catch (error) {
+            console.error('对比规则失败:', error);
+            alert('对比规则失败: ' + error.message);
+            this.hideProgressSection();
+        }
+    }
+    
+    // 加载指定版本的规则数据
+    async loadVersionRules(version) {
+        window.dataManager.setVersion(version);
+        const data = await window.dataManager.loadFile('DECK_RULESET_RULE', version);
+        return data?.Records || [];
+    }
+    
+    // 执行规则对比
+    performRulesComparison(oldRules, newRules) {
+        const oldMap = new Map(oldRules.map(r => [r.m_ID, r]));
+        const newMap = new Map(newRules.map(r => [r.m_ID, r]));
+        
+        const added = [];
+        const removed = [];
+        const modified = [];
+        
+        // 查找新增和修改的规则
+        newRules.forEach(newRule => {
+            const oldRule = oldMap.get(newRule.m_ID);
+            if (!oldRule) {
+                added.push(newRule);
+            } else {
+                const changes = this.getRuleChanges(oldRule, newRule);
+                if (changes.length > 0) {
+                    modified.push({ old: oldRule, new: newRule, changes });
+                }
+            }
+        });
+        
+        // 查找移除的规则
+        oldRules.forEach(oldRule => {
+            if (!newMap.has(oldRule.m_ID)) {
+                removed.push(oldRule);
+            }
+        });
+        
+        return { added, removed, modified };
+    }
+    
+    // 获取规则变化
+    getRuleChanges(oldRule, newRule) {
+        const changes = [];
+        
+        if (oldRule.m_deckRulesetId !== newRule.m_deckRulesetId) {
+            changes.push({
+                field: '规则集ID',
+                oldValue: oldRule.m_deckRulesetId,
+                newValue: newRule.m_deckRulesetId
+            });
+        }
+        
+        if (oldRule.m_ruleType !== newRule.m_ruleType) {
+            changes.push({
+                field: '规则类型',
+                oldValue: oldRule.m_ruleType,
+                newValue: newRule.m_ruleType
+            });
+        }
+        
+        if (oldRule.m_appliesToSubsetId !== newRule.m_appliesToSubsetId) {
+            changes.push({
+                field: '应用于子集ID',
+                oldValue: oldRule.m_appliesToSubsetId,
+                newValue: newRule.m_appliesToSubsetId
+            });
+        }
+        
+        if (oldRule.m_minValue !== newRule.m_minValue) {
+            changes.push({
+                field: '最小值',
+                oldValue: oldRule.m_minValue,
+                newValue: newRule.m_minValue
+            });
+        }
+        
+        if (oldRule.m_maxValue !== newRule.m_maxValue) {
+            changes.push({
+                field: '最大值',
+                oldValue: oldRule.m_maxValue,
+                newValue: newRule.m_maxValue
+            });
+        }
+        
+        return changes;
+    }
+    
+    // 显示规则对比结果
+    showRulesCompareResults(oldVersion, newVersion, results) {
+        console.log('📝 显示规则对比结果:', { oldVersion, newVersion, results });
+        const modal = document.getElementById('ruleCompareModal');
+        const content = document.getElementById('ruleCompareResults');
+        
+        if (!modal || !content) {
+            console.error('❌ 模态框元素未找到:', { modal: !!modal, content: !!content });
+            return;
+        }
+        
+        let html = `
+            <div style="padding: 20px;">
+                <h2 style="margin-bottom: 20px; color: #2c3e50;">📝 规则版本对比</h2>
+                <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white;">
+                    <strong>对比版本:</strong> ${oldVersion} ➜ ${newVersion}
+                </div>
+        `;
+        
+        // 新增的规则
+        if (results.added.length > 0) {
+            html += `
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #27ae60; margin-bottom: 15px;">✨ 新增规则 (${results.added.length})</h3>
+                    <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 15px; border-radius: 4px;">
+            `;
+            
+            results.added.forEach(rule => {
+                const ruleTypeName = this.deckRuleTypes[rule.m_ruleType] || `未知(${rule.m_ruleType})`;
+                html += `
+                    <div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 4px; cursor: pointer;"
+                         onclick="window.deckRulesetManager.showRuleDetails(${rule.m_ID})">
+                        <strong>规则 #${rule.m_ID}</strong> - ${ruleTypeName}
+                        <div style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                            规则集ID: ${rule.m_deckRulesetId || 'N/A'}, 
+                            子集ID: ${rule.m_appliesToSubsetId || 'N/A'}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `</div></div>`;
+        }
+        
+        // 移除的规则
+        if (results.removed.length > 0) {
+            html += `
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #c0392b; margin-bottom: 15px;">🗑️ 移除规则 (${results.removed.length})</h3>
+                    <div style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; border-radius: 4px;">
+            `;
+            
+            results.removed.forEach(rule => {
+                const ruleTypeName = this.deckRuleTypes[rule.m_ruleType] || `未知(${rule.m_ruleType})`;
+                html += `
+                    <div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 4px;">
+                        <strong>规则 #${rule.m_ID}</strong> - ${ruleTypeName}
+                        <div style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                            规则集ID: ${rule.m_deckRulesetId || 'N/A'}, 
+                            子集ID: ${rule.m_appliesToSubsetId || 'N/A'}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `</div></div>`;
+        }
+        
+        // 修改的规则
+        if (results.modified.length > 0) {
+            html += `
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #f39c12; margin-bottom: 15px;">✏️ 修改规则 (${results.modified.length})</h3>
+                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px;">
+            `;
+            
+            results.modified.forEach(item => {
+                const rule = item.new;
+                const ruleTypeName = this.deckRuleTypes[rule.m_ruleType] || `未知(${rule.m_ruleType})`;
+                html += `
+                    <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px; cursor: pointer;"
+                         onclick="window.deckRulesetManager.showRuleDetails(${rule.m_ID})">
+                        <strong>规则 #${rule.m_ID}</strong> - ${ruleTypeName}
+                        <div style="margin-top: 10px; font-size: 0.9em;">
+                `;
+                
+                item.changes.forEach(change => {
+                    html += `
+                        <div style="margin: 5px 0; padding: 5px; background: #f8f9fa; border-radius: 3px;">
+                            <strong>${change.field}:</strong>
+                            <span style="color: #dc3545;">${change.oldValue ?? 'N/A'}</span>
+                            →
+                            <span style="color: #28a745;">${change.newValue ?? 'N/A'}</span>
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+            });
+            
+            html += `</div></div>`;
+        }
+        
+        if (results.added.length === 0 && results.removed.length === 0 && results.modified.length === 0) {
+            html += `
+                <div style="padding: 40px; text-align: center; color: #7f8c8d;">
+                    <h3>✅ 两个版本的规则完全相同</h3>
+                </div>
+            `;
+        }
+        
+        html += `</div>`;
+        
+        content.innerHTML = html;
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+    
+    // 对比子集规则版本
+    async compareVersionSubsetRules() {
+        const oldVersion = document.getElementById('oldVersionSelect').value;
+        const newVersion = document.getElementById('newVersionSelect').value;
+        
+        if (!oldVersion || !newVersion) {
+            alert('请选择两个版本进行对比');
+            return;
+        }
+        
+        if (oldVersion === newVersion) {
+            alert('请选择不同的版本进行对比');
+            return;
+        }
+        
+        try {
+            this.showProgressSection();
+            
+            // 加载旧版本子集规则
+            this.updateProgress(25, '正在加载旧版本子集规则...');
+            const oldSubsetRules = await this.loadVersionSubsetRules(oldVersion);
+            
+            // 加载新版本子集规则
+            this.updateProgress(60, '正在加载新版本子集规则...');
+            const newSubsetRules = await this.loadVersionSubsetRules(newVersion);
+            
+            // 对比数据
+            this.updateProgress(90, '正在对比数据...');
+            const compareResults = this.performSubsetRulesComparison(oldSubsetRules, newSubsetRules);
+            
+            this.updateProgress(100, '对比完成！');
+            
+            // 延迟显示结果
+            setTimeout(() => {
+                this.hideProgressSection();
+                this.showSubsetRulesCompareResults(oldVersion, newVersion, compareResults);
+            }, 500);
+            
+        } catch (error) {
+            console.error('对比子集规则失败:', error);
+            alert('对比子集规则失败: ' + error.message);
+            this.hideProgressSection();
+        }
+    }
+    
+    // 加载指定版本的子集规则数据
+    async loadVersionSubsetRules(version) {
+        window.dataManager.setVersion(version);
+        const data = await window.dataManager.loadFile('SUBSET_RULE', version);
+        return data?.Records || [];
+    }
+    
+    // 执行子集规则对比
+    performSubsetRulesComparison(oldRules, newRules) {
+        const oldMap = new Map(oldRules.map(r => [r.m_ID, r]));
+        const newMap = new Map(newRules.map(r => [r.m_ID, r]));
+        
+        const added = [];
+        const removed = [];
+        const modified = [];
+        
+        // 查找新增和修改的规则
+        newRules.forEach(newRule => {
+            const oldRule = oldMap.get(newRule.m_ID);
+            if (!oldRule) {
+                added.push(newRule);
+            } else {
+                const changes = this.getSubsetRuleChanges(oldRule, newRule);
+                if (changes.length > 0) {
+                    modified.push({ old: oldRule, new: newRule, changes });
+                }
+            }
+        });
+        
+        // 查找移除的规则
+        oldRules.forEach(oldRule => {
+            if (!newMap.has(oldRule.m_ID)) {
+                removed.push(oldRule);
+            }
+        });
+        
+        return { added, removed, modified };
+    }
+    
+    // 获取子集规则变化
+    getSubsetRuleChanges(oldRule, newRule) {
+        const changes = [];
+        
+        if (oldRule.m_subsetId !== newRule.m_subsetId) {
+            changes.push({
+                field: '子集ID',
+                oldValue: oldRule.m_subsetId,
+                newValue: newRule.m_subsetId
+            });
+        }
+        
+        if (oldRule.m_ruleType !== newRule.m_ruleType) {
+            changes.push({
+                field: '规则类型',
+                oldValue: oldRule.m_ruleType,
+                newValue: newRule.m_ruleType
+            });
+        }
+        
+        if (oldRule.m_tagId !== newRule.m_tagId) {
+            changes.push({
+                field: '标签ID',
+                oldValue: oldRule.m_tagId,
+                newValue: newRule.m_tagId
+            });
+        }
+        
+        if (oldRule.m_minValue !== newRule.m_minValue) {
+            changes.push({
+                field: '最小值',
+                oldValue: oldRule.m_minValue,
+                newValue: newRule.m_minValue
+            });
+        }
+        
+        if (oldRule.m_maxValue !== newRule.m_maxValue) {
+            changes.push({
+                field: '最大值',
+                oldValue: oldRule.m_maxValue,
+                newValue: newRule.m_maxValue
+            });
+        }
+        
+        if (oldRule.m_intValue !== newRule.m_intValue) {
+            changes.push({
+                field: '整数值',
+                oldValue: oldRule.m_intValue,
+                newValue: newRule.m_intValue
+            });
+        }
+        
+        if (oldRule.m_stringValue !== newRule.m_stringValue) {
+            changes.push({
+                field: '字符串值',
+                oldValue: oldRule.m_stringValue,
+                newValue: newRule.m_stringValue
+            });
+        }
+        
+        if (oldRule.m_ruleIsNot !== newRule.m_ruleIsNot) {
+            changes.push({
+                field: '取反规则',
+                oldValue: oldRule.m_ruleIsNot,
+                newValue: newRule.m_ruleIsNot
+            });
+        }
+        
+        return changes;
+    }
+    
+    // 显示子集规则对比结果
+    showSubsetRulesCompareResults(oldVersion, newVersion, results) {
+        console.log('🔧 显示子集规则对比结果:', { oldVersion, newVersion, results });
+        const modal = document.getElementById('subsetRuleCompareModal');
+        const content = document.getElementById('subsetRuleCompareResults');
+        
+        if (!modal || !content) {
+            console.error('❌ 模态框元素未找到:', { modal: !!modal, content: !!content });
+            return;
+        }
+        
+        let html = `
+            <div style="padding: 20px;">
+                <h2 style="margin-bottom: 20px; color: #2c3e50;">🔧 子集规则版本对比</h2>
+                <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white;">
+                    <strong>对比版本:</strong> ${oldVersion} ➜ ${newVersion}
+                </div>
+        `;
+        
+        // 新增的子集规则
+        if (results.added.length > 0) {
+            html += `
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #27ae60; margin-bottom: 15px;">✨ 新增子集规则 (${results.added.length})</h3>
+                    <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 15px; border-radius: 4px;">
+            `;
+            
+            results.added.forEach(rule => {
+                const ruleTypeName = this.subsetRuleTypes[rule.m_ruleType] || `未知(${rule.m_ruleType})`;
+                const tagName = window.gameTags?.[rule.m_tagId] || `标签#${rule.m_tagId}`;
+                html += `
+                    <div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 4px;">
+                        <strong>规则 #${rule.m_ID}</strong> - ${ruleTypeName}
+                        <div style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                            子集ID: ${rule.m_subsetId}, 标签: ${tagName}
+                            ${rule.m_minValue !== undefined ? `, 最小值: ${rule.m_minValue}` : ''}
+                            ${rule.m_maxValue !== undefined ? `, 最大值: ${rule.m_maxValue}` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `</div></div>`;
+        }
+        
+        // 移除的子集规则
+        if (results.removed.length > 0) {
+            html += `
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #c0392b; margin-bottom: 15px;">🗑️ 移除子集规则 (${results.removed.length})</h3>
+                    <div style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; border-radius: 4px;">
+            `;
+            
+            results.removed.forEach(rule => {
+                const ruleTypeName = this.subsetRuleTypes[rule.m_ruleType] || `未知(${rule.m_ruleType})`;
+                const tagName = window.gameTags?.[rule.m_tagId] || `标签#${rule.m_tagId}`;
+                html += `
+                    <div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 4px;">
+                        <strong>规则 #${rule.m_ID}</strong> - ${ruleTypeName}
+                        <div style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                            子集ID: ${rule.m_subsetId}, 标签: ${tagName}
+                            ${rule.m_minValue !== undefined ? `, 最小值: ${rule.m_minValue}` : ''}
+                            ${rule.m_maxValue !== undefined ? `, 最大值: ${rule.m_maxValue}` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `</div></div>`;
+        }
+        
+        // 修改的子集规则
+        if (results.modified.length > 0) {
+            html += `
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #f39c12; margin-bottom: 15px;">✏️ 修改子集规则 (${results.modified.length})</h3>
+                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px;">
+            `;
+            
+            results.modified.forEach(item => {
+                const rule = item.new;
+                const ruleTypeName = this.subsetRuleTypes[rule.m_ruleType] || `未知(${rule.m_ruleType})`;
+                const tagName = window.gameTags?.[rule.m_tagId] || `标签#${rule.m_tagId}`;
+                html += `
+                    <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
+                        <strong>规则 #${rule.m_ID}</strong> - ${ruleTypeName} (${tagName})
+                        <div style="margin-top: 10px; font-size: 0.9em;">
+                `;
+                
+                item.changes.forEach(change => {
+                    html += `
+                        <div style="margin: 5px 0; padding: 5px; background: #f8f9fa; border-radius: 3px;">
+                            <strong>${change.field}:</strong>
+                            <span style="color: #dc3545;">${change.oldValue ?? 'N/A'}</span>
+                            →
+                            <span style="color: #28a745;">${change.newValue ?? 'N/A'}</span>
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+            });
+            
+            html += `</div></div>`;
+        }
+        
+        if (results.added.length === 0 && results.removed.length === 0 && results.modified.length === 0) {
+            html += `
+                <div style="padding: 40px; text-align: center; color: #7f8c8d;">
+                    <h3>✅ 两个版本的子集规则完全相同</h3>
+                </div>
+            `;
+        }
+        
+        html += `</div>`;
+        
+        content.innerHTML = html;
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+    
+    // 显示规则详情
+    showRuleDetails(ruleParam) {
+        try {
+            let rule;
+            
+            // 如果传入的是数字ID，则查找对应的规则
+            if (typeof ruleParam === 'number') {
+                // 从原始规则数据中查找
+                const rawRule = this.allRules.find(r => r.m_ID === ruleParam);
+                if (!rawRule) {
+                    alert('未找到规则ID: ' + ruleParam);
+                    return;
+                }
+                
+                // 转换为显示格式
+                rule = {
+                    id: rawRule.m_ID,
+                    subsetId: rawRule.m_appliesToSubsetId || 0,
+                    ruleType: rawRule.m_ruleType,
+                    ruleTypeName: this.ruleTypes[rawRule.m_ruleType] || `未知类型(${rawRule.m_ruleType})`,
+                    ruleIsNot: rawRule.m_ruleIsNot,
+                    tagId: rawRule.m_tagId,
+                    minValue: rawRule.m_minValue,
+                    maxValue: rawRule.m_maxValue,
+                    intValue: rawRule.m_intValue,
+                    stringValue: rawRule.m_stringValue
+                };
+            } else {
+                // 如果传入的是对象，直接使用
+                rule = ruleParam;
+            }
+            
+            // 构建详情HTML
+            let detailsHtml = `
+                <div style="padding: 20px;">
+                    <h3 style="margin-bottom: 20px; color: #2c3e50;">📋 规则详情</h3>
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="margin-bottom: 12px;"><strong>规则ID:</strong> ${rule.id}</div>
+                        <div style="margin-bottom: 12px;"><strong>子集ID:</strong> ${rule.subsetId || '无'}</div>
+                        <div style="margin-bottom: 12px;"><strong>规则类型:</strong> ${rule.ruleTypeName} (${rule.ruleType})</div>
+                        <div style="margin-bottom: 12px;"><strong>取反:</strong> ${rule.ruleIsNot ? '✅ 是' : '❌ 否'}</div>
+            `;
+            
+            // 显示标签信息（可点击）
+            if (rule.tagId) {
+                detailsHtml += `<div style="margin-bottom: 12px;"><strong>标签ID:</strong> <span class="tag-link-in-modal" data-tag-id="${rule.tagId}" style="color: #0066cc; cursor: pointer; text-decoration: underline;">${rule.tagId}</span></div>`;
+            }
+            
+            // 显示值信息
+            if (rule.minValue !== undefined && rule.minValue !== null) {
+                detailsHtml += `<div style="margin-bottom: 12px;"><strong>最小值:</strong> ${rule.minValue}</div>`;
+            }
+            if (rule.maxValue !== undefined && rule.maxValue !== null) {
+                detailsHtml += `<div style="margin-bottom: 12px;"><strong>最大值:</strong> ${rule.maxValue}</div>`;
+            }
+            if (rule.intValue !== undefined && rule.intValue !== null) {
+                detailsHtml += `<div style="margin-bottom: 12px;"><strong>整数值:</strong> ${rule.intValue}</div>`;
+            }
+            if (rule.stringValue) {
+                detailsHtml += `<div style="margin-bottom: 12px;"><strong>字符串值:</strong> ${rule.stringValue}</div>`;
+            }
+            
+            detailsHtml += `
+                    </div>
+                    <div style="text-align: center;">
+                        <button onclick="document.getElementById('ruleDetailsModal').style.display='none'" 
+                                style="padding: 10px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            关闭
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // 创建或更新规则详情模态框
+            let ruleModal = document.getElementById('ruleDetailsModal');
+            if (!ruleModal) {
+                ruleModal = document.createElement('div');
+                ruleModal.id = 'ruleDetailsModal';
+                ruleModal.className = 'modal';
+                ruleModal.style.cssText = 'display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6);';
+                
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = 'background-color: white; margin: 10% auto; padding: 0; border-radius: 12px; width: 600px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+                
+                ruleModal.appendChild(modalContent);
+                document.body.appendChild(ruleModal);
+                
+                // 点击模态框外部关闭
+                ruleModal.addEventListener('click', (e) => {
+                    if (e.target === ruleModal) {
+                        ruleModal.style.display = 'none';
+                    }
+                });
+            }
+            
+            ruleModal.querySelector('div').innerHTML = detailsHtml;
+            ruleModal.style.display = 'block';
+            
+            // 为模态框内的标签链接添加点击事件
+            ruleModal.querySelectorAll('.tag-link-in-modal').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const tagId = parseInt(link.getAttribute('data-tag-id'));
+                    // 先关闭规则详情模态框
+                    ruleModal.style.display = 'none';
+                    // 显示标签详情
+                    this.showTagDetails(tagId);
+                });
+            });
+            
+        } catch (error) {
+            console.error('显示规则详情失败:', error);
+            alert('显示规则详情失败: ' + error.message);
+        }
+    }
+    
+    // 显示标签详情
+    showTagDetails(tagId) {
+        try {
+            // 使用game-tags.js中的getGameTagName函数
+            const tagName = window.getGameTagName ? window.getGameTagName(tagId) : (window.GameTags?.[tagId] || `未知标签(${tagId})`);
+            
+            // 构建详情HTML
+            let detailsHtml = `
+                <div style="padding: 20px;">
+                    <h3 style="margin-bottom: 20px; color: #2c3e50;">🏷️ 标签详情</h3>
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="margin-bottom: 12px;"><strong>标签ID:</strong> ${tagId}</div>
+                        <div style="margin-bottom: 12px;"><strong>标签名称:</strong> ${tagName}</div>
+                        <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 6px; font-size: 13px; color: #1976d2;">
+                            💡 这是炉石传说游戏中使用的标签（GameTag），用于定义卡牌属性、机制和规则。
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <button onclick="document.getElementById('tagDetailsModal').style.display='none'" 
+                                style="padding: 10px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            关闭
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // 创建或更新标签详情模态框
+            let tagModal = document.getElementById('tagDetailsModal');
+            if (!tagModal) {
+                tagModal = document.createElement('div');
+                tagModal.id = 'tagDetailsModal';
+                tagModal.className = 'modal';
+                tagModal.style.cssText = 'display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6);';
+                
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = 'background-color: white; margin: 10% auto; padding: 0; border-radius: 12px; width: 600px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+                
+                tagModal.appendChild(modalContent);
+                document.body.appendChild(tagModal);
+                
+                // 点击模态框外部关闭
+                tagModal.addEventListener('click', (e) => {
+                    if (e.target === tagModal) {
+                        tagModal.style.display = 'none';
+                    }
+                });
+            }
+            
+            tagModal.querySelector('div').innerHTML = detailsHtml;
+            tagModal.style.display = 'block';
+            
+        } catch (error) {
+            console.error('加载标签详情失败:', error);
+            alert('加载标签详情失败: ' + error.message);
+        }
+    }
+    
+    // 切换查看模式
+    switchViewMode(mode) {
+        console.log(`🔄 切换查看模式: ${mode}`);
+        console.log(`📊 allRulesets 数量: ${this.allRulesets.length}`);
+        console.log(`📊 allRules 数量: ${this.allRules.length}`);
+        console.log(`📊 allSubsets 数量: ${this.allSubsets.length}`);
+        console.log(`📊 allSubsetRules 数量: ${this.allSubsetRules.length}`);
+        
+        this.viewMode = mode;
+        
+        // 更新按钮状态
+        const rulesetBtn = document.getElementById('viewByRulesetBtn');
+        const ruleBtn = document.getElementById('viewByRuleBtn');
+        const subsetBtn = document.getElementById('viewBySubsetBtn');
+        const subsetRuleBtn = document.getElementById('viewBySubsetRuleBtn');
+        
+        // 移除所有active
+        [rulesetBtn, ruleBtn, subsetBtn, subsetRuleBtn].forEach(btn => btn.classList.remove('active'));
+        
+        // 添加当前active
+        if (mode === 'ruleset') {
+            rulesetBtn.classList.add('active');
+        } else if (mode === 'rule') {
+            ruleBtn.classList.add('active');
+        } else if (mode === 'subset') {
+            subsetBtn.classList.add('active');
+        } else if (mode === 'subsetRule') {
+            subsetRuleBtn.classList.add('active');
+        }
+        
+        // 重新渲染
+        this.filterRulesets();
+    }
+    
+    // 关闭规则集版本对比模态框
+    closeRulesetCompareModal() {
+        const modal = document.getElementById('rulesetCompareModal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+        }
+    }
+    
+    // 规则集版本对比
+    async compareVersionRulesets() {
+        const oldVersion = document.getElementById('oldVersionSelect').value;
+        const newVersion = document.getElementById('newVersionSelect').value;
+        
+        if (!oldVersion || !newVersion) {
+            alert('请选择两个版本进行对比');
+            return;
+        }
+        
+        if (oldVersion === newVersion) {
+            alert('请选择不同的版本进行对比');
+            return;
+        }
+        
+        // 加载两个版本的规则集数据
+        const oldData = await this.loadVersionRulesets(oldVersion);
+        const newData = await this.loadVersionRulesets(newVersion);
+        
+        if (!oldData || !newData) {
+            alert('加载版本数据失败');
+            return;
+        }
+        
+        // 执行对比
+        const compareResults = this.performRulesetComparison(oldData, newData);
+        
+        // 显示对比结果
+        this.showRulesetCompareResults(oldVersion, newVersion, compareResults);
+    }
+    
+    // 加载指定版本的规则集数据
+    async loadVersionRulesets(version) {
+        try {
+            window.dataManager.setVersion(version);
+            
+            // 加载 DECK_RULESET
+            const rulesetData = await window.dataManager.loadFile('DECK_RULESET', version);
+            const rulesets = rulesetData?.Records || [];
+            
+            // 加载 DECK_RULESET_RULE
+            const ruleData = await window.dataManager.loadFile('DECK_RULESET_RULE', version);
+            const rules = ruleData?.Records || [];
+            
+            return { rulesets, rules };
+        } catch (error) {
+            console.error(`加载版本 ${version} 数据失败:`, error);
+            return null;
+        }
+    }
+    
+    // 执行规则集对比
+    performRulesetComparison(oldData, newData) {
+        const oldRulesets = oldData.rulesets;
+        const newRulesets = newData.rulesets;
+        const oldRules = oldData.rules;
+        const newRules = newData.rules;
+        
+        // 创建映射
+        const oldMap = new Map(oldRulesets.map(r => [r.m_ID, r]));
+        const newMap = new Map(newRulesets.map(r => [r.m_ID, r]));
+        const oldRulesMap = new Map();
+        const newRulesMap = new Map();
+        
+        // 按规则集ID分组规则
+        oldRules.forEach(rule => {
+            if (!oldRulesMap.has(rule.m_deckRulesetId)) {
+                oldRulesMap.set(rule.m_deckRulesetId, []);
+            }
+            oldRulesMap.get(rule.m_deckRulesetId).push(rule);
+        });
+        
+        newRules.forEach(rule => {
+            if (!newRulesMap.has(rule.m_deckRulesetId)) {
+                newRulesMap.set(rule.m_deckRulesetId, []);
+            }
+            newRulesMap.get(rule.m_deckRulesetId).push(rule);
+        });
+        
+        const added = [];
+        const removed = [];
+        const modified = [];
+        
+        // 查找新增和修改的规则集
+        newRulesets.forEach(newRuleset => {
+            const oldRuleset = oldMap.get(newRuleset.m_ID);
+            
+            if (!oldRuleset) {
+                // 新增的规则集
+                added.push({
+                    ruleset: newRuleset,
+                    rules: newRulesMap.get(newRuleset.m_ID) || []
+                });
+            } else {
+                // 检查是否有变化
+                const oldRulesList = oldRulesMap.get(newRuleset.m_ID) || [];
+                const newRulesList = newRulesMap.get(newRuleset.m_ID) || [];
+                
+                // 比较规则集属性和规则
+                const rulesetChanged = JSON.stringify(oldRuleset) !== JSON.stringify(newRuleset);
+                const rulesChanged = JSON.stringify(oldRulesList) !== JSON.stringify(newRulesList);
+                
+                if (rulesetChanged || rulesChanged) {
+                    modified.push({
+                        oldRuleset,
+                        newRuleset,
+                        oldRules: oldRulesList,
+                        newRules: newRulesList
+                    });
+                }
+            }
+        });
+        
+        // 查找删除的规则集
+        oldRulesets.forEach(oldRuleset => {
+            if (!newMap.has(oldRuleset.m_ID)) {
+                removed.push({
+                    ruleset: oldRuleset,
+                    rules: oldRulesMap.get(oldRuleset.m_ID) || []
+                });
+            }
+        });
+        
+        return { added, removed, modified };
+    }
+    
+    // 显示规则集版本对比结果
+    showRulesetCompareResults(oldVersion, newVersion, results) {
+        console.log('📊 显示规则集对比结果:', { oldVersion, newVersion, results });
+        const modal = document.getElementById('rulesetCompareModal');
+        const content = document.getElementById('rulesetCompareResults');
+        
+        if (!modal || !content) {
+            console.error('❌ 模态框元素未找到:', { modal: !!modal, content: !!content });
+            return;
+        }
+        
+        let html = `
+            <div style="padding: 20px;">
+                <h2 style="margin-bottom: 20px; color: #2c3e50;">📊 规则集版本对比</h2>
+                <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white;">
+                    <strong>对比版本:</strong> ${oldVersion} ➜ ${newVersion}
+                </div>
+        `;
+        
+        // 新增的规则集
+        if (results.added.length > 0) {
+            html += `
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #27ae60; margin-bottom: 15px;">✨ 新增规则集 (${results.added.length})</h3>
+            `;
+            
+            results.added.forEach(item => {
+                const ruleset = item.ruleset;
+                const rules = item.rules;
+                
+                html += `
+                    <div style="margin-bottom: 20px; padding: 15px; background: #d5f4e6; border-left: 4px solid #27ae60; border-radius: 6px;">
+                        <div style="margin-bottom: 10px;"><strong>ID:</strong> ${ruleset.m_ID}</div>
+                        <div style="margin-bottom: 10px;"><strong>规则数量:</strong> ${rules.length}</div>
+                `;
+                
+                if (rules.length > 0) {
+                    html += `<div style="margin-top: 10px;"><strong>规则列表:</strong></div><div style="margin-left: 20px;">`;
+                    rules.forEach(rule => {
+                        const ruleTypeName = this.deckRuleTypes[rule.m_ruleType] || `未知(${rule.m_ruleType})`;
+                        html += `
+                            <div style="margin: 8px 0; padding: 10px; background: white; border-radius: 4px; font-size: 13px;">
+                                <div><strong>规则ID:</strong> <span class="rule-id-link" data-rule-id="${rule.m_ID}" style="color: #3498db; cursor: pointer; text-decoration: underline;" onclick="window.deckRulesetManager.showRuleDetails(${rule.m_ID})">${rule.m_ID}</span></div>
+                                <div><strong>类型:</strong> ${ruleTypeName}</div>
+                                <div><strong>应用于子集ID:</strong> ${rule.m_appliesToSubsetId ?? '无'}</div>
+                                <div><strong>最小值:</strong> ${rule.m_minValue ?? '无'}</div>
+                                <div><strong>最大值:</strong> ${rule.m_maxValue ?? '无'}</div>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            html += `</div>`;
+        }
+        
+        // 删除的规则集
+        if (results.removed.length > 0) {
+            html += `
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #e74c3c; margin-bottom: 15px;">🗑️ 删除规则集 (${results.removed.length})</h3>
+            `;
+            
+            results.removed.forEach(item => {
+                const ruleset = item.ruleset;
+                const rules = item.rules;
+                
+                html += `
+                    <div style="margin-bottom: 20px; padding: 15px; background: #fadbd8; border-left: 4px solid #e74c3c; border-radius: 6px;">
+                        <div style="margin-bottom: 10px;"><strong>ID:</strong> ${ruleset.m_ID}</div>
+                        <div style="margin-bottom: 10px;"><strong>规则数量:</strong> ${rules.length}</div>
+                `;
+                
+                if (rules.length > 0) {
+                    html += `<div style="margin-top: 10px;"><strong>规则列表:</strong></div><div style="margin-left: 20px;">`;
+                    rules.forEach(rule => {
+                        const ruleTypeName = this.deckRuleTypes[rule.m_ruleType] || `未知(${rule.m_ruleType})`;
+                        html += `
+                            <div style="margin: 8px 0; padding: 10px; background: white; border-radius: 4px; font-size: 13px;">
+                                <div><strong>规则ID:</strong> ${rule.m_ID}</div>
+                                <div><strong>类型:</strong> ${ruleTypeName}</div>
+                                <div><strong>应用于子集ID:</strong> ${rule.m_appliesToSubsetId ?? '无'}</div>
+                                <div><strong>最小值:</strong> ${rule.m_minValue ?? '无'}</div>
+                                <div><strong>最大值:</strong> ${rule.m_maxValue ?? '无'}</div>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            html += `</div>`;
+        }
+        
+        // 修改的规则集
+        if (results.modified.length > 0) {
+            html += `
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #f39c12; margin-bottom: 15px;">🔄 修改规则集 (${results.modified.length})</h3>
+            `;
+            
+            results.modified.forEach(item => {
+                const oldRuleset = item.oldRuleset;
+                const newRuleset = item.newRuleset;
+                const oldRules = item.oldRules;
+                const newRules = item.newRules;
+                
+                html += `
+                    <div style="margin-bottom: 20px; padding: 15px; background: #fef5e7; border-left: 4px solid #f39c12; border-radius: 6px;">
+                        <div style="margin-bottom: 10px;"><strong>规则集ID:</strong> ${newRuleset.m_ID}</div>
+                `;
+                
+                // 比较规则变化
+                const oldRuleIds = new Set(oldRules.map(r => r.m_ID));
+                const newRuleIds = new Set(newRules.map(r => r.m_ID));
+                
+                const addedRules = newRules.filter(r => !oldRuleIds.has(r.m_ID));
+                const removedRules = oldRules.filter(r => !newRuleIds.has(r.m_ID));
+                const commonRules = newRules.filter(r => oldRuleIds.has(r.m_ID));
+                
+                if (addedRules.length > 0) {
+                    html += `<div style="margin-top: 10px; color: #27ae60;"><strong>➕ 新增规则 (${addedRules.length}):</strong></div><div style="margin-left: 20px;">`;
+                    addedRules.forEach(rule => {
+                        const ruleTypeName = this.deckRuleTypes[rule.m_ruleType] || `未知(${rule.m_ruleType})`;
+                        html += `
+                            <div style="margin: 8px 0; padding: 10px; background: white; border-radius: 4px; font-size: 13px;">
+                                <div><strong>规则ID:</strong> <span class="rule-id-link" data-rule-id="${rule.m_ID}" style="color: #3498db; cursor: pointer; text-decoration: underline;" onclick="window.deckRulesetManager.showRuleDetails(${rule.m_ID})">${rule.m_ID}</span></div>
+                                <div><strong>类型:</strong> ${ruleTypeName}</div>
+                                <div><strong>应用于子集ID:</strong> ${rule.m_appliesToSubsetId ?? '无'}</div>
+                                <div><strong>最小值:</strong> ${rule.m_minValue ?? '无'}</div>
+                                <div><strong>最大值:</strong> ${rule.m_maxValue ?? '无'}</div>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                }
+                
+                if (removedRules.length > 0) {
+                    html += `<div style="margin-top: 10px; color: #e74c3c;"><strong>➖ 删除规则 (${removedRules.length}):</strong></div><div style="margin-left: 20px;">`;
+                    removedRules.forEach(rule => {
+                        const ruleTypeName = this.deckRuleTypes[rule.m_ruleType] || `未知(${rule.m_ruleType})`;
+                        html += `
+                            <div style="margin: 8px 0; padding: 10px; background: white; border-radius: 4px; font-size: 13px;">
+                                <div><strong>规则ID:</strong> ${rule.m_ID}</div>
+                                <div><strong>类型:</strong> ${ruleTypeName}</div>
+                                <div><strong>应用于子集ID:</strong> ${rule.m_appliesToSubsetId ?? '无'}</div>
+                                <div><strong>最小值:</strong> ${rule.m_minValue ?? '无'}</div>
+                                <div><strong>最大值:</strong> ${rule.m_maxValue ?? '无'}</div>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            html += `</div>`;
+        }
+        
+        if (results.added.length === 0 && results.removed.length === 0 && results.modified.length === 0) {
+            html += `<div style="padding: 30px; text-align: center; color: #7f8c8d;">📝 两个版本的规则集完全相同</div>`;
+        }
+        
+        html += `</div>`;
+        
+        content.innerHTML = html;
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        
+        // 添加规则ID点击事件
+        content.querySelectorAll('.rule-id-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const ruleId = parseInt(e.target.dataset.ruleId);
+                this.showRuleDetails(ruleId);
+            });
+        });
+        
+        // 添加标签ID点击事件
+        content.querySelectorAll('.tag-id-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const tagId = parseInt(e.target.dataset.tagId);
+                this.showTagDetails(tagId);
+            });
+        });
     }
 }
 

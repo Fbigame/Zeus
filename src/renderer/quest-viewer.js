@@ -11,6 +11,9 @@ class QuestViewerSystem {
         this.boosters = [];
         this.currentVersion = null;
         this.compareMode = false;
+        this.sortBy = 'id';
+        this.sortOrder = 'asc';
+        this.reverseOrder = false;
         this.oldVersionQuests = [];
         this.newVersionQuests = [];
         this.compareResults = null;
@@ -73,6 +76,16 @@ class QuestViewerSystem {
         
         // 筛选器
         document.getElementById('searchInput').addEventListener('input', () => this.filterQuests());
+        document.getElementById('sortSelect').addEventListener('change', (e) => {
+            const [field, order] = e.target.value.split('-');
+            this.sortBy = field;
+            this.sortOrder = order;
+            this.filterQuests();
+        });
+        document.getElementById('reverseOrderCheck').addEventListener('change', (e) => {
+            this.reverseOrder = e.target.checked;
+            this.displayQuests();
+        });
         document.getElementById('typeFilter').addEventListener('change', () => this.filterQuests());
         document.getElementById('rewardFilter').addEventListener('change', () => this.filterQuests());
         document.getElementById('extraRewardFilter').addEventListener('change', () => this.filterQuests());
@@ -511,6 +524,25 @@ class QuestViewerSystem {
             return true;
         });
         
+        // 排序
+        this.filteredQuests.sort((a, b) => {
+            let aValue, bValue;
+            
+            if (this.sortBy === 'id') {
+                aValue = a.id;
+                bValue = b.id;
+            } else if (this.sortBy === 'reward') {
+                aValue = a.rewardXP;
+                bValue = b.rewardXP;
+            }
+            
+            if (this.sortOrder === 'asc') {
+                return aValue - bValue;
+            } else {
+                return bValue - aValue;
+            }
+        });
+        
         this.displayQuests();
     }
     
@@ -523,12 +555,18 @@ class QuestViewerSystem {
             return;
         }
         
+        // 倒序显示
+        let displayQuests = [...this.filteredQuests];
+        if (this.reverseOrder) {
+            displayQuests.reverse();
+        }
+        
         // 替换描述中的 $q 占位符
         const getDescription = (quest) => {
             return quest.description.replace(/\$q/g, quest.quota);
         };
         
-        container.innerHTML = this.filteredQuests.map(quest => `
+        container.innerHTML = displayQuests.map(quest => `
             <div class="quest-card" onclick="questViewer.showQuestDetails(${quest.id})">
                 <div class="quest-name">${quest.name}</div>
                 <div class="quest-description">${getDescription(quest)}</div>

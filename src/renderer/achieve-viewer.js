@@ -11,6 +11,8 @@ class AchieveSystem {
         this.currentVersion = '';
         this.currentView = 'tree'; // 'tree' or 'list'
         this.currentMode = 'normal'; // 'normal' or 'compare'
+        this.sortBy = 'id'; // 排序字段
+        this.reverseSort = false; // 是否倒序
         
         // 成就类型映射
         this.achTypeMap = {
@@ -155,6 +157,15 @@ class AchieveSystem {
         document.getElementById('achTypeFilter').addEventListener('change', () => this.filterAchieves());
         document.getElementById('enabledFilter').addEventListener('change', () => this.filterAchieves());
         document.getElementById('rewardFilter').addEventListener('change', () => this.filterAchieves());
+        document.getElementById('sortSelect').addEventListener('change', (e) => {
+            this.sortBy = e.target.value;
+            this.filterAchieves();
+        });
+        document.getElementById('reverseSortBtn').addEventListener('click', () => {
+            this.reverseSort = !this.reverseSort;
+            document.getElementById('reverseSortBtn').classList.toggle('active', this.reverseSort);
+            this.filterAchieves();
+        });
 
         // 模式切换
         document.getElementById('normalModeBtn').addEventListener('click', () => this.switchMode('normal'));
@@ -463,6 +474,32 @@ class AchieveSystem {
             if (reward && achieve.m_reward !== reward) return false;
 
             return true;
+        });
+
+        // 排序
+        this.filteredAchieves.sort((a, b) => {
+            let aValue, bValue;
+            
+            switch(this.sortBy) {
+                case 'id':
+                    aValue = a.m_ID;
+                    bValue = b.m_ID;
+                    break;
+                case 'achType':
+                    aValue = a.m_achType;
+                    bValue = b.m_achType;
+                    break;
+                case 'enabled':
+                    aValue = a.m_enabled;
+                    bValue = b.m_enabled;
+                    break;
+                default:
+                    aValue = a.m_ID;
+                    bValue = b.m_ID;
+            }
+            
+            const result = aValue > bValue ? 1 : (aValue < bValue ? -1 : 0);
+            return this.reverseSort ? -result : result;
         });
 
         // 显示过滤后的数据

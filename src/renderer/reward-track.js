@@ -8,6 +8,8 @@ class RewardTrackSystem {
         this.allRewardLists = [];
         this.filteredTracks = [];
         this.currentCategory = 'all';
+        this.sortBy = 'id'; // 排序字段
+        this.reverseSort = false; // 是否倒序
         
         // 奖励轨道类型映射
         this.trackTypes = {
@@ -57,6 +59,15 @@ class RewardTrackSystem {
         document.getElementById('searchInput').addEventListener('input', () => this.filterTracks());
         document.getElementById('seasonFilter').addEventListener('change', () => this.filterTracks());
         document.getElementById('typeFilter').addEventListener('change', () => this.filterTracks());
+        document.getElementById('sortSelect').addEventListener('change', (e) => {
+            this.sortBy = e.target.value;
+            this.filterTracks();
+        });
+        document.getElementById('reverseSortBtn').addEventListener('click', () => {
+            this.reverseSort = !this.reverseSort;
+            document.getElementById('reverseSortBtn').classList.toggle('active', this.reverseSort);
+            this.filterTracks();
+        });
         
         // 模态框
         document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
@@ -330,6 +341,36 @@ class RewardTrackSystem {
             if (typeFilter && track.m_rewardTrackType != typeFilter) return false;
             
             return true;
+        });
+        
+        // 排序
+        this.filteredTracks.sort((a, b) => {
+            let aValue, bValue;
+            
+            switch(this.sortBy) {
+                case 'id':
+                    aValue = a.m_ID;
+                    bValue = b.m_ID;
+                    break;
+                case 'season':
+                    aValue = a.m_season || 0;
+                    bValue = b.m_season || 0;
+                    break;
+                case 'type':
+                    aValue = a.m_rewardTrackType || 0;
+                    bValue = b.m_rewardTrackType || 0;
+                    break;
+                case 'level':
+                    aValue = this.allLevels.filter(l => l.m_rewardTrackId === a.m_ID).length;
+                    bValue = this.allLevels.filter(l => l.m_rewardTrackId === b.m_ID).length;
+                    break;
+                default:
+                    aValue = a.m_ID;
+                    bValue = b.m_ID;
+            }
+            
+            const result = aValue > bValue ? 1 : (aValue < bValue ? -1 : 0);
+            return this.reverseSort ? -result : result;
         });
         
         this.renderTrackList();
