@@ -42,10 +42,28 @@ def parse_dbf(
     env = UnityPy.load(dbf_path.as_posix())
     # 统计需要处理的对象总数（仅 MonoBehaviour 类型）用于进度条
     objects = [obj for obj in env.objects if obj.type.name == 'MonoBehaviour']
-    for obj in tqdm(objects, desc="解析 DBF 文件", unit="文件"):
-        data = obj.read_typetree()
-        with open(output / f'{data["m_Name"]}.json', 'w', encoding='utf-8') as f:
-            json.dump(data, f)
+    
+    # 检测是否在管道中运行，如果是则禁用动态进度条
+    import os
+    is_piped = not sys.stdout.isatty()
+    
+    # 如果在管道中，使用简单的计数输出而不是动态进度条
+    if is_piped:
+        total = len(objects)
+        print(f"开始解析 {total} 个 DBF 文件...")
+        for i, obj in enumerate(objects, 1):
+            data = obj.read_typetree()
+            with open(output / f'{data["m_Name"]}.json', 'w', encoding='utf-8') as f:
+                json.dump(data, f)
+            # 每处理 20 个文件输出一次进度
+            if i % 20 == 0 or i == total:
+                print(f"已处理: {i}/{total} ({i*100//total}%)")
+    else:
+        # 正常的动态进度条
+        for obj in tqdm(objects, desc="解析 DBF 文件", unit="文件"):
+            data = obj.read_typetree()
+            with open(output / f'{data["m_Name"]}.json', 'w', encoding='utf-8') as f:
+                json.dump(data, f)
 
 
 def _normalize_default(path: Path | None) -> Path | None:

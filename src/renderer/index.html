@@ -839,7 +839,18 @@
                     <li>首次运行会自动检测游戏安装路径</li>
                     <li>提取的数据会保存到游戏数据目录中</li>
                     <li>提取过程可能需要几分钟时间</li>
+                    <li>如果数据已是最新，工具会自动跳过提取</li>
                 </ul>
+            </div>
+            
+            <!-- 强制提取选项 -->
+            <div style="margin-bottom: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="forceExtractCheckbox" style="cursor: pointer;">
+                    <span style="font-size: 14px; color: #856404;">
+                        <strong>⚠️ 强制重新提取</strong> - 即使数据已是最新也重新提取（忽略缓存）
+                    </span>
+                </label>
             </div>
             
             <!-- 进度显示区域 -->
@@ -1290,10 +1301,13 @@
                 const pathResult = await window.electronAPI.getCurrentDataPath();
                 const outputPath = pathResult.success ? pathResult.path : null;
                 
+                // 获取强制提取选项
+                const forceExtract = document.getElementById('forceExtractCheckbox').checked;
+                
                 // 运行工具
                 const result = await window.electronAPI.runAutoAssetTool({
                     output: outputPath,
-                    force: false
+                    force: forceExtract
                 });
                 
                 if (result.success) {
