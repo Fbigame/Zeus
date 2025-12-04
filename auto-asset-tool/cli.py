@@ -38,7 +38,7 @@ def parse_dbf(
     objects = [obj for obj in env.objects if obj.type.name == 'MonoBehaviour']
     for obj in tqdm(objects, desc="解析 DBF 文件", unit="文件"):
         data = obj.read_typetree()
-        with open(output / f'{data["m_Name"]}.join', 'w', encoding='utf-8') as f:
+        with open(output / f'{data["m_Name"]}.json', 'w', encoding='utf-8') as f:
             json.dump(data, f)
 
 
