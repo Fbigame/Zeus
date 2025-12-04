@@ -1,2 +1,10 @@
-node_modules
-dist/
+/node_modules
+/dist/
+/build/
+
+# python
+/auto-asset-tool-build/
+/auto-asset-tool-dist/
+/.venv/
+/.idea/
+__pycache__/

@@ -1,0 +1,6 @@
+# auto-asset-tool 依赖
+UnityPy~=1.24.1
+pyinstaller~=6.17.0
+protobuf~=6.33.1
+
+tqdm~=4.67.1
