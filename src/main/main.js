@@ -13,7 +13,8 @@ autoUpdater.logger = require('electron-log')
 autoUpdater.logger.transports.file.level = 'info'
 
 // 允许开发环境检查更新（用于测试）
-if (!app.isPackaged) {
+const isDevEnvironment = !app.isPackaged
+if (isDevEnvironment) {
   Object.defineProperty(app, 'isPackaged', {
     get() {
       return true;
@@ -575,18 +576,19 @@ ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
   try {
     // 获取工具路径
     let toolPath
-    if (app.isPackaged) {
+    if (isDevEnvironment) {
+      // 开发环境：使用 process.cwd() 获取当前工作目录（项目根目录）
+      const projectRoot = process.cwd()
+      toolPath = path.join(projectRoot, 'tools', 'auto-asset-tool.exe')
+    } else {
       // 打包后：在 resources 目录下
       toolPath = path.join(process.resourcesPath, 'tools', 'auto-asset-tool.exe')
-    } else {
-      // 开发环境：在项目根目录的 tools 文件夹
-      // __dirname 是 src/main，需要返回两级到项目根目录
-      const projectRoot = path.join(__dirname, '..', '..')
-      toolPath = path.join(projectRoot, 'tools', 'auto-asset-tool.exe')
     }
     
     console.log('工具路径:', toolPath)
     console.log('__dirname:', __dirname)
+    console.log('process.cwd():', process.cwd())
+    console.log('app.getAppPath():', app.getAppPath())
     console.log('app.isPackaged:', app.isPackaged)
     
     // 检查工具是否存在
