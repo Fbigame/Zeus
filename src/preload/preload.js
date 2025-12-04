@@ -29,7 +29,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectDataDirectory: () => ipcRenderer.invoke('select-data-directory'),
   migrateDataDirectory: (newPath) => ipcRenderer.invoke('migrate-data-directory', newPath),
   resetDataDirectory: () => ipcRenderer.invoke('reset-data-directory'),
-  openGameDataDirectory: () => ipcRenderer.invoke('open-game-data-directory')
+  openGameDataDirectory: () => ipcRenderer.invoke('open-game-data-directory'),
+  
+  // 自动资源提取工具
+  runAutoAssetTool: (options) => ipcRenderer.invoke('run-auto-asset-tool', options),
+  onAutoAssetToolOutput: (callback) => ipcRenderer.on('auto-asset-tool-output', (event, data) => callback(data))
 })
 
 // 暴露更新相关API

@@ -570,6 +570,102 @@ ipcMain.handle('install-update', async () => {
   }
 })
 
+// IPC 处理器 - 运行自动资源提取工具
+ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
+  try {
+    const toolPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'tools', 'auto-asset-tool.exe')
+      : path.join(__dirname, '..', '..', 'tools', 'auto-asset-tool.exe')
+    
+    console.log('工具路径:', toolPath)
+    
+    // 检查工具是否存在
+    try {
+      await fs.access(toolPath)
+    } catch (error) {
+      return { 
+        success: false, 
+        error: '自动资源提取工具未找到，请确保 tools/auto-asset-tool.exe 存在' 
+      }
+    }
+    
+    // 构建命令参数
+    const args = []
+    if (options.force) {
+      args.push('-f')
+    }
+    if (options.dbfPath) {
+      args.push('--dbf-path', options.dbfPath)
+    }
+    if (options.output) {
+      args.push('--output', options.output)
+    }
+    if (options.agentPath) {
+      args.push('--agent-path', options.agentPath)
+    }
+    
+    console.log('执行命令:', toolPath, args.join(' '))
+    
+    return new Promise((resolve) => {
+      const child = spawn(toolPath, args, {
+        cwd: path.dirname(toolPath),
+        stdio: ['ignore', 'pipe', 'pipe']
+      })
+      
+      let stdout = ''
+      let stderr = ''
+      
+      child.stdout.on('data', (data) => {
+        const output = data.toString()
+        stdout += output
+        console.log('[auto-asset-tool]', output)
+        // 发送实时输出到渲染进程
+        event.sender.send('auto-asset-tool-output', { type: 'stdout', data: output })
+      })
+      
+      child.stderr.on('data', (data) => {
+        const output = data.toString()
+        stderr += output
+        console.error('[auto-asset-tool]', output)
+        // 发送实时输出到渲染进程
+        event.sender.send('auto-asset-tool-output', { type: 'stderr', data: output })
+      })
+      
+      child.on('close', (code) => {
+        console.log(`auto-asset-tool 退出，代码: ${code}`)
+        if (code === 0) {
+          resolve({ 
+            success: true, 
+            message: '数据提取完成！',
+            stdout,
+            stderr
+          })
+        } else {
+          resolve({ 
+            success: false, 
+            error: `工具执行失败 (退出代码: ${code})`,
+            stdout,
+            stderr
+          })
+        }
+      })
+      
+      child.on('error', (error) => {
+        console.error('auto-asset-tool 执行错误:', error)
+        resolve({ 
+          success: false, 
+          error: `工具执行错误: ${error.message}`,
+          stdout,
+          stderr
+        })
+      })
+    })
+  } catch (error) {
+    console.error('运行 auto-asset-tool 失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
 // IPC 处理器 - 获取应用版本
 ipcMain.handle('get-app-version', async () => {
   try {

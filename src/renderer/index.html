@@ -712,6 +712,9 @@
                         <button id="changeDataDirBtn" style="margin-left: 10px; padding: 8px 20px; background: #e67e22; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s ease;">
                             更改数据目录
                         </button>
+                        <button id="extractGameDataBtn" style="margin-left: 10px; padding: 8px 20px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s ease;">
+                            🔄 提取游戏数据
+                        </button>
                     </div>
                     <span id="dataDirPath" style="display: block; margin-top: 8px; font-size: 12px; color: #7f8c8d; word-break: break-all;"></span>
                 </div>
@@ -817,6 +820,40 @@
                 <button id="resetToDefaultBtn" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer;">恢复默认</button>
                 <button id="cancelDataDirChange" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer;">取消</button>
                 <button id="confirmDataDirChange" style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;" disabled>确认更改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提取游戏数据模态框 -->
+    <div id="extractDataModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center;">
+        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 700px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #2c3e50;">🔄 提取游戏数据</h2>
+                <button id="closeExtractModal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #7f8c8d; padding: 0; width: 30px; height: 30px;">×</button>
+            </div>
+            
+            <div style="margin-bottom: 20px; padding: 15px; background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 6px;">
+                <strong>ℹ️ 说明：</strong>
+                <ul style="margin: 10px 0 0 20px; font-size: 14px;">
+                    <li>此工具会自动从炉石传说客户端提取游戏数据</li>
+                    <li>首次运行会自动检测游戏安装路径</li>
+                    <li>提取的数据会保存到游戏数据目录中</li>
+                    <li>提取过程可能需要几分钟时间</li>
+                </ul>
+            </div>
+            
+            <!-- 进度显示区域 -->
+            <div id="extractProgress" style="display: none; margin-bottom: 20px; padding: 15px; background: #e8f4f8; border: 1px solid #3498db; border-radius: 6px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <div style="width: 20px; height: 20px; border: 3px solid #3498db; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <strong style="color: #2c3e50;">正在提取数据...</strong>
+                </div>
+                <div style="font-size: 13px; color: #34495e; line-height: 1.6; max-height: 300px; overflow-y: auto; background: #2c3e50; color: #ecf0f1; padding: 10px; border-radius: 4px; font-family: 'Consolas', monospace;" id="extractOutputText"></div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="cancelExtractBtn" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer;">取消</button>
+                <button id="startExtractBtn" style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;">开始提取</button>
             </div>
         </div>
     </div>
@@ -1211,6 +1248,77 @@
             } catch (error) {
                 console.error('重置失败:', error);
                 alert('重置失败: ' + error.message);
+            }
+        });
+        
+        // 提取游戏数据
+        document.getElementById('extractGameDataBtn').addEventListener('click', () => {
+            document.getElementById('extractDataModal').style.display = 'flex';
+        });
+        
+        document.getElementById('closeExtractModal').addEventListener('click', () => {
+            document.getElementById('extractDataModal').style.display = 'none';
+        });
+        
+        document.getElementById('cancelExtractBtn').addEventListener('click', () => {
+            document.getElementById('extractDataModal').style.display = 'none';
+        });
+        
+        document.getElementById('startExtractBtn').addEventListener('click', async () => {
+            const progressDiv = document.getElementById('extractProgress');
+            const outputText = document.getElementById('extractOutputText');
+            const startBtn = document.getElementById('startExtractBtn');
+            const cancelBtn = document.getElementById('cancelExtractBtn');
+            
+            // 显示进度
+            progressDiv.style.display = 'block';
+            outputText.textContent = '初始化中...\n';
+            startBtn.disabled = true;
+            cancelBtn.disabled = true;
+            
+            // 监听实时输出
+            window.electronAPI.onAutoAssetToolOutput((data) => {
+                const text = data.data.trim();
+                if (text) {
+                    outputText.textContent += text + '\n';
+                    outputText.scrollTop = outputText.scrollHeight;
+                }
+            });
+            
+            try {
+                // 获取当前数据路径
+                const pathResult = await window.electronAPI.getCurrentDataPath();
+                const outputPath = pathResult.success ? pathResult.path.replace(/[\\\/]Game Data$/, '') : null;
+                
+                // 运行工具
+                const result = await window.electronAPI.runAutoAssetTool({
+                    output: outputPath,
+                    force: false
+                });
+                
+                if (result.success) {
+                    outputText.textContent += '\n✅ 数据提取完成！\n';
+                    
+                    setTimeout(() => {
+                        document.getElementById('extractDataModal').style.display = 'none';
+                        progressDiv.style.display = 'none';
+                        outputText.textContent = '';
+                        startBtn.disabled = false;
+                        cancelBtn.disabled = false;
+                        
+                        // 刷新页面以加载新数据
+                        alert('数据提取成功！页面将刷新以加载新数据。');
+                        location.reload();
+                    }, 2000);
+                } else {
+                    outputText.textContent += `\n❌ 提取失败: ${result.error}\n`;
+                    startBtn.disabled = false;
+                    cancelBtn.disabled = false;
+                }
+            } catch (error) {
+                outputText.textContent += `\n❌ 错误: ${error.message}\n`;
+                startBtn.disabled = false;
+                cancelBtn.disabled = false;
             }
         });
         
