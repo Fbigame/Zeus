@@ -1286,9 +1286,9 @@
             });
             
             try {
-                // 获取当前数据路径
+                // 获取当前数据路径（包含 Game Data）
                 const pathResult = await window.electronAPI.getCurrentDataPath();
-                const outputPath = pathResult.success ? pathResult.path.replace(/[\\\/]Game Data$/, '') : null;
+                const outputPath = pathResult.success ? pathResult.path : null;
                 
                 // 运行工具
                 const result = await window.electronAPI.runAutoAssetTool({
