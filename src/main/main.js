@@ -573,19 +573,31 @@ ipcMain.handle('install-update', async () => {
 // IPC 处理器 - 运行自动资源提取工具
 ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
   try {
-    const toolPath = app.isPackaged
-      ? path.join(process.resourcesPath, 'tools', 'auto-asset-tool.exe')
-      : path.join(__dirname, '..', '..', 'tools', 'auto-asset-tool.exe')
+    // 获取工具路径
+    let toolPath
+    if (app.isPackaged) {
+      // 打包后：在 resources 目录下
+      toolPath = path.join(process.resourcesPath, 'tools', 'auto-asset-tool.exe')
+    } else {
+      // 开发环境：在项目根目录的 tools 文件夹
+      // __dirname 是 src/main，需要返回两级到项目根目录
+      const projectRoot = path.join(__dirname, '..', '..')
+      toolPath = path.join(projectRoot, 'tools', 'auto-asset-tool.exe')
+    }
     
     console.log('工具路径:', toolPath)
+    console.log('__dirname:', __dirname)
+    console.log('app.isPackaged:', app.isPackaged)
     
     // 检查工具是否存在
     try {
       await fs.access(toolPath)
+      console.log('✓ 工具文件存在')
     } catch (error) {
+      console.error('✗ 工具文件不存在:', error)
       return { 
         success: false, 
-        error: '自动资源提取工具未找到，请确保 tools/auto-asset-tool.exe 存在' 
+        error: `自动资源提取工具未找到: ${toolPath}\n请确保 tools/auto-asset-tool.exe 存在` 
       }
     }
     

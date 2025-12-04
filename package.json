@@ -59,6 +59,10 @@
       {
         "from": "app-update.yml",
         "to": "app-update.yml"
+      },
+      {
+        "from": "tools",
+        "to": "tools"
       }
     ],
     "publish": [

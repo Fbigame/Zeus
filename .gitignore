@@ -1,6 +1,8 @@
 /node_modules
 /dist/
 /build/
+/out/
+/tools/
 
 # python
 /auto-asset-tool-build/

@@ -11,7 +11,32 @@ on:
     workflow_dispatch: # 允许手动触发
 
 jobs:
+    build-python-tool:
+        runs-on: windows-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.10"
+                  cache: "pip"
+
+            - name: Install Python dependencies
+              run: pip install -r requirements.txt
+
+            - name: Build Python tool
+              run: python -m PyInstaller auto-asset-tool.spec --noconfirm
+
+            - name: Upload Python tool
+              uses: actions/upload-artifact@v4
+              with:
+                  name: auto-asset-tool
+                  path: dist/auto-asset-tool.exe
+
     build:
+        needs: build-python-tool
         runs-on: ${{ matrix.os }}
 
         strategy:
@@ -29,6 +54,23 @@ jobs:
               with:
                   node-version: "20"
                   cache: "npm"
+
+            - name: Download Python tool
+              uses: actions/download-artifact@v4
+              with:
+                  name: auto-asset-tool
+                  path: tools
+
+            - name: Verify Python tool
+              run: |
+                  if (Test-Path "tools/auto-asset-tool.exe") {
+                      Write-Host "✓ Python tool downloaded successfully"
+                      Get-Item "tools/auto-asset-tool.exe" | Select-Object Name, Length
+                  } else {
+                      Write-Error "✗ Python tool not found"
+                      exit 1
+                  }
+              shell: pwsh
 
             - name: Install dependencies
               run: npm ci --legacy-peer-deps
