@@ -573,6 +573,11 @@ ipcMain.handle('install-update', async () => {
 
 // IPC 处理器 - 运行自动资源提取工具
 ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
+  console.log('========================================')
+  console.log('开始运行自动资源提取工具')
+  console.log('传入参数:', JSON.stringify(options, null, 2))
+  console.log('========================================')
+  
   try {
     // 获取工具路径
     let toolPath
@@ -585,13 +590,16 @@ ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
       toolPath = path.join(process.resourcesPath, 'tools', 'auto-asset-tool.exe')
     }
     
-    console.log('工具路径:', toolPath)
-    console.log('__dirname:', __dirname)
-    console.log('process.cwd():', process.cwd())
-    console.log('app.getAppPath():', app.getAppPath())
-    console.log('app.isPackaged:', app.isPackaged)
+    console.log('环境信息:')
+    console.log('  isDevEnvironment:', isDevEnvironment)
+    console.log('  工具路径:', toolPath)
+    console.log('  __dirname:', __dirname)
+    console.log('  process.cwd():', process.cwd())
+    console.log('  app.getAppPath():', app.getAppPath())
+    console.log('  app.isPackaged:', app.isPackaged)
     
     // 检查工具是否存在
+    console.log('检查工具文件是否存在...')
     try {
       await fs.access(toolPath)
       console.log('✓ 工具文件存在')
@@ -618,22 +626,32 @@ ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
       args.push('--agent-path', options.agentPath)
     }
     
-    console.log('执行命令:', toolPath, args.join(' '))
+    console.log('执行命令:', toolPath)
+    console.log('命令参数:', args)
+    console.log('完整命令:', [toolPath, ...args].join(' '))
+    console.log('========================================')
     
     return new Promise((resolve) => {
+      const startTime = Date.now()
+      console.log('启动子进程...')
+      
       const child = spawn(toolPath, args, {
         cwd: path.dirname(toolPath),
         stdio: ['ignore', 'pipe', 'pipe'],
         env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
       })
       
+      console.log('子进程 PID:', child.pid)
+      
       let stdout = ''
       let stderr = ''
+      let outputLineCount = 0
       
       child.stdout.on('data', (data) => {
         const output = data.toString('utf8')
         stdout += output
-        console.log('[auto-asset-tool]', output)
+        outputLineCount++
+        console.log(`[stdout #${outputLineCount}]`, output.trim())
         // 发送实时输出到渲染进程
         event.sender.send('auto-asset-tool-output', { type: 'stdout', data: output })
       })
@@ -641,14 +659,23 @@ ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
       child.stderr.on('data', (data) => {
         const output = data.toString('utf8')
         stderr += output
-        console.error('[auto-asset-tool]', output)
+        console.error('[stderr]', output.trim())
         // 发送实时输出到渲染进程
         event.sender.send('auto-asset-tool-output', { type: 'stderr', data: output })
       })
       
       child.on('close', (code) => {
-        console.log(`auto-asset-tool 退出，代码: ${code}`)
+        const duration = Date.now() - startTime
+        console.log('========================================')
+        console.log(`子进程退出，代码: ${code}`)
+        console.log(`执行时间: ${duration}ms`)
+        console.log(`输出行数: ${outputLineCount}`)
+        console.log(`stdout 长度: ${stdout.length} 字节`)
+        console.log(`stderr 长度: ${stderr.length} 字节`)
+        console.log('========================================')
+        
         if (code === 0) {
+          console.log('✅ 工具执行成功')
           resolve({ 
             success: true, 
             message: '数据提取完成！',
@@ -656,6 +683,10 @@ ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
             stderr
           })
         } else {
+          console.error('❌ 工具执行失败')
+          if (stderr) {
+            console.error('错误输出:', stderr)
+          }
           resolve({ 
             success: false, 
             error: `工具执行失败 (退出代码: ${code})`,
@@ -666,7 +697,11 @@ ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
       })
       
       child.on('error', (error) => {
-        console.error('auto-asset-tool 执行错误:', error)
+        console.error('========================================')
+        console.error('❌ 子进程启动错误:', error)
+        console.error('错误类型:', error.name)
+        console.error('错误消息:', error.message)
+        console.error('========================================')
         resolve({ 
           success: false, 
           error: `工具执行错误: ${error.message}`,
@@ -676,7 +711,10 @@ ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
       })
     })
   } catch (error) {
-    console.error('运行 auto-asset-tool 失败:', error)
+    console.error('========================================')
+    console.error('❌ 运行 auto-asset-tool 失败:', error)
+    console.error('错误堆栈:', error.stack)
+    console.error('========================================')
     return { success: false, error: error.message }
   }
 })

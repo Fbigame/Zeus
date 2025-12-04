@@ -118,15 +118,26 @@ def main() -> None:
     """
     CLI 入口：仅负责读取系统参数并转交给 parse_and_save。
     """
+    print("开始检查游戏数据...")
     dbf_path, output_dir, agent_path, force = _parse_cli(sys.argv[1:])
-    if force or should_update():
-        init_paths()
-        parse_dbf(
-            dbf_path=dbf_path,
-            output=output_dir / get_version(agent_path),
-        )
-        # 最后进行cache的保存，防止中途报错导致错误缓存
-        cache.save()
+    
+    if force:
+        print("强制模式：将重新提取所有数据")
+    elif should_update():
+        print("检测到数据已更新，开始提取...")
+    else:
+        print("数据已是最新，无需重新提取")
+        print(f"输出目录: {output_dir / get_version(agent_path)}")
+        return
+    
+    init_paths()
+    parse_dbf(
+        dbf_path=dbf_path,
+        output=output_dir / get_version(agent_path),
+    )
+    # 最后进行cache的保存，防止中途报错导致错误缓存
+    cache.save()
+    print("数据提取完成！")
 
 
 if __name__ == "__main__":
