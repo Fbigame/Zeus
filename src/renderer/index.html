@@ -1306,10 +1306,18 @@
                         startBtn.disabled = false;
                         cancelBtn.disabled = false;
                         
-                        // 刷新页面以加载新数据
-                        alert('数据提取成功！页面将刷新以加载新数据。');
-                        location.reload();
-                    }, 2000);
+                        // 显示成功通知
+                        showNotification(
+                            '✅ 数据提取成功',
+                            '游戏数据已成功提取，页面将自动刷新以加载新数据。',
+                            'success'
+                        );
+                        
+                        // 延迟刷新页面以加载新数据
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    }, 1000);
                 } else {
                     outputText.textContent += `\n❌ 提取失败: ${result.error}\n`;
                     startBtn.disabled = false;
