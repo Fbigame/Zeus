@@ -22,6 +22,16 @@ contextBridge.exposeInMainWorld('fileAPI', {
   showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options)
 })
 
+// 暴露Electron API
+contextBridge.exposeInMainWorld('electronAPI', {
+  // 数据目录管理
+  getCurrentDataPath: () => ipcRenderer.invoke('get-current-data-path'),
+  selectDataDirectory: () => ipcRenderer.invoke('select-data-directory'),
+  migrateDataDirectory: (newPath) => ipcRenderer.invoke('migrate-data-directory', newPath),
+  resetDataDirectory: () => ipcRenderer.invoke('reset-data-directory'),
+  openGameDataDirectory: () => ipcRenderer.invoke('open-game-data-directory')
+})
+
 // 暴露更新相关API
 contextBridge.exposeInMainWorld('updateAPI', {
   // 检查更新

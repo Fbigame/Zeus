@@ -704,10 +704,15 @@
                 
                 <!-- 数据目录快捷操作 -->
                 <div style="text-align: center; margin-bottom: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px; border: 1px solid #3498db;">
-                    <span style="color: #2c3e50; font-size: 14px;">📁 游戏数据目录：</span>
-                    <button id="openDataDirBtn" style="margin-left: 10px; padding: 8px 20px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s ease;">
-                        打开数据文件夹
-                    </button>
+                    <div style="margin-bottom: 10px;">
+                        <span style="color: #2c3e50; font-size: 14px;">📁 游戏数据目录：</span>
+                        <button id="openDataDirBtn" style="margin-left: 10px; padding: 8px 20px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s ease;">
+                            打开数据文件夹
+                        </button>
+                        <button id="changeDataDirBtn" style="margin-left: 10px; padding: 8px 20px; background: #e67e22; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s ease;">
+                            更改数据目录
+                        </button>
+                    </div>
                     <span id="dataDirPath" style="display: block; margin-top: 8px; font-size: 12px; color: #7f8c8d; word-break: break-all;"></span>
                 </div>
                 
@@ -760,6 +765,60 @@
                 </div>
             </div>
         </section>
+    </div>
+
+    <!-- 数据目录更改模态框 -->
+    <div id="dataDirModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center;">
+        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #2c3e50;">🗂️ 更改数据目录</h2>
+                <button id="closeDataDirModal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #7f8c8d; padding: 0; width: 30px; height: 30px;">×</button>
+            </div>
+            
+            <div style="margin-bottom: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;">
+                <strong>⚠️ 注意事项：</strong>
+                <ul style="margin: 10px 0 0 20px; font-size: 14px;">
+                    <li>选择新目录后，系统会自动创建 "Game Data" 文件夹</li>
+                    <li>原目录中的数据会被复制到新目录</li>
+                    <li>建议选择剩余空间充足的磁盘</li>
+                    <li><strong style="color: #e74c3c;">迁移完成后，原目录的数据会被自动删除</strong></li>
+                </ul>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: #34495e; font-weight: bold;">当前数据目录：</label>
+                <div style="padding: 10px; background: #ecf0f1; border-radius: 4px; font-size: 13px; color: #2c3e50; word-break: break-all;" id="currentDataPathDisplay"></div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: #34495e; font-weight: bold;">新的数据目录：</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="flex: 1; padding: 10px; background: #f8f9fa; border: 2px dashed #3498db; border-radius: 4px; font-size: 13px; color: #7f8c8d; word-break: break-all;" id="newDataPathDisplay">未选择</div>
+                    <button id="selectNewDirBtn" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">📁 浏览</button>
+                </div>
+            </div>
+            
+            <!-- 进度显示区域 -->
+            <div id="migrationProgress" style="display: none; margin-bottom: 20px; padding: 15px; background: #e8f4f8; border: 1px solid #3498db; border-radius: 6px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <div style="width: 20px; height: 20px; border: 3px solid #3498db; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <strong style="color: #2c3e50;" id="migrationStatusText">正在迁移数据...</strong>
+                </div>
+                <div style="font-size: 13px; color: #34495e; line-height: 1.6;" id="migrationDetailText"></div>
+            </div>
+            
+            <style>
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            </style>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="resetToDefaultBtn" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer;">恢复默认</button>
+                <button id="cancelDataDirChange" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer;">取消</button>
+                <button id="confirmDataDirChange" style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;" disabled>确认更改</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -990,7 +1049,175 @@
         document.getElementById('selectRewardTrackBtn').addEventListener('click', () => {
             window.location.href = 'reward-track.html';
         });
+
+        // 数据目录管理
+        let currentDataPath = '';
+        
+        // 更新数据目录显示
+        async function updateDataDirDisplay() {
+            try {
+                const result = await window.electronAPI.getCurrentDataPath();
+                if (result.success) {
+                    currentDataPath = result.path;
+                    const pathElement = document.getElementById('dataDirPath');
+                    pathElement.textContent = result.path;
+                    
+                    if (result.isCustom) {
+                        pathElement.style.color = '#e67e22';
+                        pathElement.title = '自定义路径';
+                    } else {
+                        pathElement.style.color = '#7f8c8d';
+                        pathElement.title = '默认路径';
+                    }
+                }
+            } catch (error) {
+                console.error('获取数据路径失败:', error);
+            }
+        }
+        
+        // 打开数据文件夹
+        document.getElementById('openDataDirBtn').addEventListener('click', async () => {
+            try {
+                await window.electronAPI.openGameDataDirectory();
+            } catch (error) {
+                console.error('打开数据文件夹失败:', error);
+                alert('打开数据文件夹失败: ' + error.message);
+            }
+        });
+        
+        // 更改数据目录
+        document.getElementById('changeDataDirBtn').addEventListener('click', async () => {
+            const modal = document.getElementById('dataDirModal');
+            modal.style.display = 'flex';
+            
+            // 显示当前路径
+            document.getElementById('currentDataPathDisplay').textContent = currentDataPath;
+        });
+        
+        // 关闭模态框
+        document.getElementById('closeDataDirModal').addEventListener('click', () => {
+            document.getElementById('dataDirModal').style.display = 'none';
+        });
+        
+        document.getElementById('cancelDataDirChange').addEventListener('click', () => {
+            document.getElementById('dataDirModal').style.display = 'none';
+        });
+        
+        // 选择新目录
+        document.getElementById('selectNewDirBtn').addEventListener('click', async () => {
+            try {
+                const result = await window.electronAPI.selectDataDirectory();
+                if (result.success && !result.canceled) {
+                    document.getElementById('newDataPathDisplay').textContent = result.path;
+                    document.getElementById('confirmDataDirChange').disabled = false;
+                }
+            } catch (error) {
+                console.error('选择目录失败:', error);
+                alert('选择目录失败: ' + error.message);
+            }
+        });
+        
+        // 确认更改
+        document.getElementById('confirmDataDirChange').addEventListener('click', async () => {
+            const newPath = document.getElementById('newDataPathDisplay').textContent;
+            if (!newPath || newPath === '未选择') {
+                alert('请先选择新的数据目录');
+                return;
+            }
+            
+            const btn = document.getElementById('confirmDataDirChange');
+            const progressDiv = document.getElementById('migrationProgress');
+            const statusText = document.getElementById('migrationStatusText');
+            const detailText = document.getElementById('migrationDetailText');
+            
+            // 禁用所有按钮
+            btn.disabled = true;
+            document.getElementById('selectNewDirBtn').disabled = true;
+            document.getElementById('resetToDefaultBtn').disabled = true;
+            document.getElementById('cancelDataDirChange').disabled = true;
+            document.getElementById('closeDataDirModal').disabled = true;
+            
+            // 显示进度
+            progressDiv.style.display = 'block';
+            statusText.textContent = '正在迁移数据...';
+            detailText.textContent = '正在复制文件到新目录...';
+            
+            try {
+                const result = await window.electronAPI.migrateDataDirectory(newPath);
+                if (result.success) {
+                    statusText.textContent = '✅ 迁移完成！';
+                    detailText.innerHTML = `
+                        <div style="margin-bottom: 8px;">✓ 数据已复制到新目录</div>
+                        <div style="margin-bottom: 8px;">✓ 原目录数据已删除</div>
+                        <div style="color: #27ae60; font-weight: bold;">新路径: ${result.newPath}</div>
+                    `;
+                    
+                    // 等待2秒后关闭模态框
+                    setTimeout(async () => {
+                        document.getElementById('dataDirModal').style.display = 'none';
+                        await updateDataDirDisplay();
+                        
+                        // 重置表单
+                        progressDiv.style.display = 'none';
+                        document.getElementById('newDataPathDisplay').textContent = '未选择';
+                        btn.disabled = true;
+                        document.getElementById('selectNewDirBtn').disabled = false;
+                        document.getElementById('resetToDefaultBtn').disabled = false;
+                        document.getElementById('cancelDataDirChange').disabled = false;
+                        document.getElementById('closeDataDirModal').disabled = false;
+                    }, 2000);
+                } else {
+                    statusText.textContent = '❌ 迁移失败';
+                    detailText.textContent = result.error;
+                    detailText.style.color = '#e74c3c';
+                    
+                    // 重新启用按钮
+                    btn.disabled = false;
+                    document.getElementById('selectNewDirBtn').disabled = false;
+                    document.getElementById('resetToDefaultBtn').disabled = false;
+                    document.getElementById('cancelDataDirChange').disabled = false;
+                    document.getElementById('closeDataDirModal').disabled = false;
+                }
+            } catch (error) {
+                console.error('数据迁移失败:', error);
+                statusText.textContent = '❌ 迁移失败';
+                detailText.textContent = error.message;
+                detailText.style.color = '#e74c3c';
+                
+                // 重新启用按钮
+                btn.disabled = false;
+                document.getElementById('selectNewDirBtn').disabled = false;
+                document.getElementById('resetToDefaultBtn').disabled = false;
+                document.getElementById('cancelDataDirChange').disabled = false;
+                document.getElementById('closeDataDirModal').disabled = false;
+            }
+        });
+        
+        // 重置为默认目录
+        document.getElementById('resetToDefaultBtn').addEventListener('click', async () => {
+            if (!confirm('确定要重置为默认数据目录吗？\n\n注意：这不会移动或删除现有数据，只是改变程序读取数据的位置。')) {
+                return;
+            }
+            
+            try {
+                const result = await window.electronAPI.resetDataDirectory();
+                if (result.success) {
+                    alert('已重置为默认数据目录\n\n新路径: ' + result.path);
+                    document.getElementById('dataDirModal').style.display = 'none';
+                    await updateDataDirDisplay();
+                } else {
+                    alert('重置失败: ' + result.error);
+                }
+            } catch (error) {
+                console.error('重置失败:', error);
+                alert('重置失败: ' + error.message);
+            }
+        });
+        
+        // 页面加载时更新显示
+        updateDataDirDisplay();
     </script>
+    
     <script src="shared-config.js"></script>
 </body>
 </html>

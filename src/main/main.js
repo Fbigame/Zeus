@@ -47,8 +47,46 @@ function configureProxy() {
 // 应用启动时配置代理
 configureProxy()
 
-// 获取游戏数据目录路径（统一使用应用数据目录）
-function getGameDataPath() {
+// 获取配置文件路径
+function getConfigPath() {
+  const userDataPath = app.getPath('userData')
+  return path.join(userDataPath, 'config.json')
+}
+
+// 读取配置
+async function readConfig() {
+  try {
+    const configPath = getConfigPath()
+    const data = await fs.readFile(configPath, 'utf-8')
+    return JSON.parse(data)
+  } catch (error) {
+    // 配置文件不存在或读取失败，返回默认配置
+    return {}
+  }
+}
+
+// 写入配置
+async function writeConfig(config) {
+  try {
+    const configPath = getConfigPath()
+    await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8')
+    return { success: true }
+  } catch (error) {
+    console.error('写入配置失败:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+// 获取游戏数据目录路径（支持自定义路径）
+async function getGameDataPath() {
+  const config = await readConfig()
+  
+  if (config.customDataPath) {
+    // 使用自定义路径
+    return path.join(config.customDataPath, 'Game Data')
+  }
+  
+  // 使用默认路径
   // Windows: %APPDATA%/heathstone-client-tool/Game Data
   // macOS: ~/Library/Application Support/heathstone-client-tool/Game Data
   // Linux: ~/.config/heathstone-client-tool/Game Data
@@ -67,7 +105,7 @@ function getUserDataPath() {
 
 // 检查游戏数据目录是否存在
 async function checkGameDataDirectory() {
-  const gameDataPath = getGameDataPath()
+  const gameDataPath = await getGameDataPath()
   try {
     await fs.access(gameDataPath)
     // 检查是否有版本子目录
@@ -150,9 +188,10 @@ const createMenu = () => {
         {
           label: '打开游戏数据目录',
           accelerator: 'CmdOrCtrl+O',
-          click: () => {
+          click: async () => {
             const { shell } = require('electron')
-            shell.openPath(getGameDataPath())
+            const gameDataPath = await getGameDataPath()
+            shell.openPath(gameDataPath)
           }
         },
         { type: 'separator' },
@@ -325,7 +364,7 @@ function checkForUpdates(manual = false) {
 // IPC 处理器 - 获取游戏数据路径
 ipcMain.handle('get-default-data-path', async () => {
   try {
-    const gameDataPath = getGameDataPath()
+    const gameDataPath = await getGameDataPath()
     // 确保游戏数据目录存在
     await fs.mkdir(gameDataPath, { recursive: true })
     return { success: true, path: gameDataPath }
@@ -339,7 +378,7 @@ ipcMain.handle('get-default-data-path', async () => {
 ipcMain.handle('open-game-data-directory', async () => {
   try {
     const { shell } = require('electron')
-    const gameDataPath = getGameDataPath()
+    const gameDataPath = await getGameDataPath()
     await fs.mkdir(gameDataPath, { recursive: true })
     await shell.openPath(gameDataPath)
     return { success: true }
@@ -348,6 +387,153 @@ ipcMain.handle('open-game-data-directory', async () => {
     return { success: false, error: error.message }
   }
 })
+
+// IPC 处理器 - 获取当前数据目录路径
+ipcMain.handle('get-current-data-path', async () => {
+  try {
+    const gameDataPath = await getGameDataPath()
+    const config = await readConfig()
+    return { 
+      success: true, 
+      path: gameDataPath,
+      isCustom: !!config.customDataPath,
+      customBasePath: config.customDataPath || null
+    }
+  } catch (error) {
+    console.error('获取当前数据路径失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// IPC 处理器 - 选择新的数据文件夹
+ipcMain.handle('select-data-directory', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory'],
+      title: '选择游戏数据存储位置',
+      buttonLabel: '选择此文件夹'
+    })
+    
+    if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+      return { success: false, canceled: true }
+    }
+    
+    const selectedPath = result.filePaths[0]
+    return { success: true, path: selectedPath }
+  } catch (error) {
+    console.error('选择数据文件夹失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// IPC 处理器 - 迁移数据到新目录
+ipcMain.handle('migrate-data-directory', async (event, newBasePath) => {
+  try {
+    const oldGameDataPath = await getGameDataPath()
+    const newGameDataPath = path.join(newBasePath, 'Game Data')
+    
+    console.log('开始数据迁移:')
+    console.log('  源路径:', oldGameDataPath)
+    console.log('  目标路径:', newGameDataPath)
+    
+    // 检查源目录是否存在
+    let sourceExists = false
+    let hasData = false
+    try {
+      await fs.access(oldGameDataPath)
+      sourceExists = true
+      const entries = await fs.readdir(oldGameDataPath)
+      hasData = entries.length > 0
+    } catch (error) {
+      console.log('源目录不存在或为空')
+    }
+    
+    // 创建新的Game Data目录
+    await fs.mkdir(newGameDataPath, { recursive: true })
+    
+    // 如果源目录存在且有数据，则进行迁移
+    if (sourceExists && hasData) {
+      // 检查源路径和目标路径是否相同
+      const isSamePath = path.normalize(oldGameDataPath).toLowerCase() === path.normalize(newGameDataPath).toLowerCase()
+      
+      if (isSamePath) {
+        console.log('源路径和目标路径相同，无需迁移')
+        return {
+          success: true,
+          newPath: newGameDataPath,
+          migrated: false,
+          deleted: false,
+          message: '目标路径与当前路径相同，无需迁移。'
+        }
+      }
+      
+      console.log('开始复制数据...')
+      await copyDirectory(oldGameDataPath, newGameDataPath)
+      console.log('数据复制完成')
+      
+      // 删除原目录
+      console.log('准备删除原目录:', oldGameDataPath)
+      try {
+        await fs.rm(oldGameDataPath, { recursive: true, force: true })
+        console.log('✓ 原目录已成功删除')
+      } catch (deleteError) {
+        console.error('删除原目录失败:', deleteError)
+        // 即使删除失败，也继续保存配置，因为数据已经复制成功
+      }
+    }
+    
+    // 保存新配置
+    const config = await readConfig()
+    config.customDataPath = newBasePath
+    await writeConfig(config)
+    
+    console.log('配置已更新')
+    
+    return { 
+      success: true, 
+      newPath: newGameDataPath,
+      migrated: hasData,
+      deleted: hasData,
+      message: hasData ? '数据迁移成功，原目录已删除！' : '新目录已设置，旧目录无数据需要迁移。'
+    }
+  } catch (error) {
+    console.error('迁移数据失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// IPC 处理器 - 重置为默认数据目录
+ipcMain.handle('reset-data-directory', async () => {
+  try {
+    const config = await readConfig()
+    delete config.customDataPath
+    await writeConfig(config)
+    
+    const defaultPath = path.join(app.getPath('userData'), 'Game Data')
+    return { success: true, path: defaultPath }
+  } catch (error) {
+    console.error('重置数据目录失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// 递归复制目录
+async function copyDirectory(source, destination) {
+  await fs.mkdir(destination, { recursive: true })
+  
+  const entries = await fs.readdir(source, { withFileTypes: true })
+  
+  for (const entry of entries) {
+    const sourcePath = path.join(source, entry.name)
+    const destPath = path.join(destination, entry.name)
+    
+    if (entry.isDirectory()) {
+      await copyDirectory(sourcePath, destPath)
+    } else {
+      await fs.copyFile(sourcePath, destPath)
+    }
+  }
+}
 
 // IPC 处理器 - 检查更新
 ipcMain.handle('check-for-updates', async () => {
@@ -408,7 +594,17 @@ ipcMain.handle('get-user-data-path', async () => {
 
 ipcMain.handle('scan-directories', async (event, dirPath) => {
   try {
-    const fullPath = path.resolve(dirPath);
+    let fullPath;
+    
+    // 如果是相对路径且以data开头，转换为绝对路径
+    if (dirPath.startsWith('./data/') || dirPath.startsWith('data/')) {
+      const gameDataPath = await getGameDataPath();
+      const relativePath = dirPath.replace(/^\.?\/data\//, '').replace(/^data\//, '');
+      fullPath = path.join(gameDataPath, relativePath);
+    } else {
+      fullPath = path.resolve(dirPath);
+    }
+    
     const entries = await fs.readdir(fullPath, { withFileTypes: true });
     const directories = entries
       .filter(entry => entry.isDirectory())
@@ -427,7 +623,7 @@ ipcMain.handle('scan-files', async (event, dirPath, extension) => {
     
     // 如果是相对路径且以data开头，转换为绝对路径
     if (dirPath.startsWith('./data/') || dirPath.startsWith('data/')) {
-      const gameDataPath = getGameDataPath();
+      const gameDataPath = await getGameDataPath();
       const relativePath = dirPath.replace(/^\.?\/data\//, '').replace(/^data\//, '');
       fullPath = path.join(gameDataPath, relativePath);
     } else {
@@ -464,12 +660,12 @@ ipcMain.handle('read-file', async (event, filePath) => {
     }
     // 处理 data 路径（游戏数据）
     else if (filePath.startsWith('./data/') || filePath.startsWith('data/')) {
-      const gameDataPath = getGameDataPath();
+      const gameDataPath = await getGameDataPath();
       const relativePath = filePath.replace(/^\.?\/data\//, '').replace(/^data\//, '');
       actualPath = path.join(gameDataPath, relativePath);
     }
     
-    console.log('读取文件:', { originalPath: filePath, actualPath, gameDataPath: getGameDataPath() });
+    console.log('读取文件:', { originalPath: filePath, actualPath });
     const data = await fs.readFile(actualPath, 'utf8');
     return { success: true, data };
   } catch (error) {
@@ -492,7 +688,7 @@ ipcMain.handle('write-file', async (event, filePath, data) => {
     }
     // 处理 data 路径（游戏数据）
     else if (filePath.startsWith('./data/') || filePath.startsWith('data/')) {
-      const gameDataPath = getGameDataPath();
+      const gameDataPath = await getGameDataPath();
       const relativePath = filePath.replace(/^\.?\/data\//, '').replace(/^data\//, '');
       actualPath = path.join(gameDataPath, relativePath);
     }
