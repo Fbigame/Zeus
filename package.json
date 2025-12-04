@@ -16,7 +16,8 @@
     "make": "electron-builder --win --x64",
     "dist": "electron-builder --win --x64",
     "publish": "electron-builder --win --x64 --publish always",
-    "build:auto-asset-tool": "python -m pip install -r requirements.txt && pyinstaller -F -n auto-asset-tool --workpath auto-asset-tool-build --distpath auto-asset-tool-dist auto-asset-tool/cli.py",
+    "build:python": "python -m PyInstaller auto-asset-tool.spec --noconfirm && xcopy /Y dist\\auto-asset-tool.exe tools\\",
+    "build:local": "pwsh -File build-local.ps1",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Fbigame",
