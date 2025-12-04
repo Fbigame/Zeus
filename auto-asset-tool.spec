@@ -1,12 +1,26 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+
+# 收集 UnityPy 的所有数据文件和子模块
+unitypy_datas = collect_data_files('UnityPy')
+unitypy_hiddenimports = collect_submodules('UnityPy')
 
 a = Analysis(
-    ['auto-asset-tool\\cli.py'],
-    pathex=[],
+    ['run_tool.py'],
+    pathex=['auto-asset-tool'],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=unitypy_datas,
+    hiddenimports=unitypy_hiddenimports + [
+        'UnityPy.resources',
+        'google.protobuf',
+        'google.protobuf.internal',
+        'cli',
+        'cache',
+        'path',
+        'version',
+        'product_db',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

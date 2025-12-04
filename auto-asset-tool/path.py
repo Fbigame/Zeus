@@ -66,7 +66,7 @@ class Paths:
         dbf 解压文件存储路径（可配置）。
         优先使用 cache 中的值，若不存在则回退到默认 OUTPUT。
         """
-        from .cache import cache  # 延迟导入，避免循环依赖
+        from cache import cache  # 延迟导入，避免循环依赖
         value = cache['output-dir']
         if not value:
             return self.OUTPUT
@@ -74,7 +74,7 @@ class Paths:
     
     @output.setter
     def output(self, value: str | Path) -> None:
-        from .cache import cache
+        from cache import cache
         p = Path(value)
         cache['output-dir'] = p.as_posix()
     
@@ -84,7 +84,7 @@ class Paths:
         DBF 路径（可配置）。
         优先使用 cache 中的值，若不存在则回退到默认 DBF。
         """
-        from .cache import cache
+        from cache import cache
         value = cache['dbf-path']
         if not value:
             return self.DBF
@@ -92,7 +92,7 @@ class Paths:
     
     @dbf.setter
     def dbf(self, value: str | Path) -> None:
-        from .cache import cache
+        from cache import cache
         p = Path(value)
         cache['dbf-path'] = p.as_posix()
     
@@ -102,7 +102,7 @@ class Paths:
         agent 路径（可配置）。
         优先使用 cache 中的值，若不存在则回退到默认 HEARTHSTONE_AGENT。
         """
-        from .cache import cache
+        from cache import cache
         value = cache['agent-path']
         if not value:
             return self.HEARTHSTONE_AGENT
@@ -110,7 +110,7 @@ class Paths:
     
     @hearthstone_agent.setter
     def hearthstone_agent(self, value: str | Path) -> None:
-        from .cache import cache
+        from cache import cache
         p = Path(value)
         cache['agent-path'] = p.as_posix()
 

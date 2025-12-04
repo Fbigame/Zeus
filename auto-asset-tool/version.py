@@ -1,9 +1,9 @@
 import urllib.request
 from pathlib import Path
 
-from .cache import cache
-from .path import paths
-from .product_db import ProductDB
+from cache import cache
+from path import paths
+from product_db import ProductDB
 
 
 def get_version(path: Path):

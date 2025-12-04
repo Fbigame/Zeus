@@ -5,14 +5,14 @@ from functools import cached_property
 class Cache:
     @cached_property
     def _dict(self):
-        from .path import paths
+        from path import paths
         if not paths.CACHE.exists():
             return {}
         with paths.CACHE.open('r', encoding='utf-8') as f:
             return json.load(f)
     
     def save(self):
-        from .path import paths
+        from path import paths
         if not paths.CACHE.parent.exists():
             paths.CACHE.parent.mkdir(parents=True, exist_ok=True)
         with paths.CACHE.open('w', encoding='utf-8') as f:

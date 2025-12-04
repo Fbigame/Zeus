@@ -9,9 +9,9 @@ from typing import Sequence
 import UnityPy
 from tqdm import tqdm
 
-from .cache import cache
-from .path import paths, init_paths
-from .version import get_version
+from cache import cache
+from path import paths, init_paths
+from version import get_version
 
 
 def should_update():
