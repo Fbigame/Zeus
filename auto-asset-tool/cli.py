@@ -3,8 +3,14 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import io
 from pathlib import Path
 from typing import Sequence
+
+# 设置标准输出为 UTF-8 编码
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 import UnityPy
 from tqdm import tqdm

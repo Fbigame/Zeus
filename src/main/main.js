@@ -623,14 +623,15 @@ ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
     return new Promise((resolve) => {
       const child = spawn(toolPath, args, {
         cwd: path.dirname(toolPath),
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
       })
       
       let stdout = ''
       let stderr = ''
       
       child.stdout.on('data', (data) => {
-        const output = data.toString()
+        const output = data.toString('utf8')
         stdout += output
         console.log('[auto-asset-tool]', output)
         // 发送实时输出到渲染进程
@@ -638,7 +639,7 @@ ipcMain.handle('run-auto-asset-tool', async (event, options = {}) => {
       })
       
       child.stderr.on('data', (data) => {
-        const output = data.toString()
+        const output = data.toString('utf8')
         stderr += output
         console.error('[auto-asset-tool]', output)
         // 发送实时输出到渲染进程
