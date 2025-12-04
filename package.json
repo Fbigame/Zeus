@@ -1,7 +1,7 @@
 {
   "name": "heathstone-client-tool",
   "productName": "HearthstoneClientTool",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "main": "src/main/main.js",
   "repository": {
     "type": "git",
