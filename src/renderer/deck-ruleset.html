@@ -109,11 +109,11 @@
                     </div>
                 </div>
 
-                <!-- 搜索 -->
-                <div class="ruleset-filters">
-                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索ID...">
-                    <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                        <select id="sortSelect" class="sort-select" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                <!-- 搜索和筛选 -->
+<div class="ruleset-filters">
+                    <div>
+                        <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索ID...">
+                        <select id="sortSelect" class="sort-select">
                             <option value="id-asc">按ID排序 ↑</option>
                             <option value="id-desc">按ID排序 ↓</option>
                             <option value="ruleCount-asc">按规则数排序 ↑</option>
@@ -123,9 +123,18 @@
                             <input type="checkbox" id="reverseOrderCheck" style="width: 18px; height: 18px; cursor: pointer;">
                             <span style="font-size: 14px;">倒序查看</span>
                         </label>
-                    </div>
-                    <div style="margin-top: 10px;">
                         <button id="toggleCompareBtn" class="compare-btn">🔄 进入对比模式</button>
+                        <!-- 子集筛选选项 -->
+                        <label id="subsetFilterWithRulesLabel" style="display: none; align-items: center; gap: 5px; cursor: pointer; background: #e3f2fd; padding: 6px 12px; border-radius: 4px;">
+                            <input type="checkbox" id="filterSubsetWithRules" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-size: 14px;">📋 有规则映射</span>
+                        </label>
+                        <label id="subsetFilterWithCardsLabel" style="display: none; align-items: center; gap: 5px; cursor: pointer; background: #e8f5e9; padding: 6px 12px; border-radius: 4px;">
+                            <input type="checkbox" id="filterSubsetWithCards" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-size: 14px;">🃏 有卡牌数据</span>
+                        </label>
+                    </div>
+                    <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
                         <button id="selectAllBtn" class="compare-btn" style="display: none;">☑️ 全选</button>
                         <button id="compareRulesetsBtn" class="compare-btn" style="display: none;">📊 对比选中的规则集</button>
                         <button id="clearSelectionBtn" class="back-btn" style="display: none;">✖️ 清除选择</button>
@@ -133,9 +142,15 @@
                     </div>
                 </div>
                 
+                <!-- 顶部分页 -->
+                <div id="topPagination"></div>
+                
                 <div class="ruleset-list" id="rulesetList">
                     <!-- 规则集列表将在这里显示 -->
                 </div>
+                
+                <!-- 底部分页 -->
+                <div id="bottomPagination"></div>
             </div>
         </section>
 
@@ -265,6 +280,7 @@
     <script src="data-manager.js"></script>
     <script src="shared-config.js"></script>
     <script src="game-tags.js"></script>
+    <script src="pagination.js"></script>
     <script src="deck-ruleset.js"></script>
 </body>
 </html>

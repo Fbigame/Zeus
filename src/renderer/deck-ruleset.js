@@ -14,6 +14,8 @@ class DeckRulesetSystem {
         this.subsets = {}; // 存储子集数据
         this.subsetRules = {}; // 存储子集规则数据
         this.userNotes = { SUBSET: {} }; // 存储用户备注
+        this.cardData = {}; // 存储卡牌数据缓存，格式：{ cardId: cardName }
+        this.subsetCards = {}; // 存储子集到卡牌的映射，格式：{ subsetId: [cardId1, cardId2, ...] }
         this.currentEditingRuleId = null; // 当前正在编辑备注的规则ID
         this.compareMode = false; // 对比模式（规则集对比）
         this.versionCompareMode = false; // 版本对比模式
@@ -26,6 +28,13 @@ class DeckRulesetSystem {
         this.newVersionSubsets = []; // 新版本子集数据
         this.oldVersionRulesets = []; // 旧版本规则集数据
         this.newVersionRulesets = []; // 新版本规则集数据
+        // 初始化通用分页组件
+        this.pagination = new Pagination({
+            pageSize: 20,
+            onPageChange: () => this.displayRulesets()
+        });
+        // 将分页实例暴露到全局，供HTML中的按钮调用
+        window.paginationInstance = this.pagination;
         
         // 规则类型映射 (DeckRulesetRule.RuleType)
         this.ruleTypes = {
@@ -140,6 +149,10 @@ class DeckRulesetSystem {
             this.displayRulesets();
         });
         
+        // 子集筛选选项
+        document.getElementById('filterSubsetWithRules').addEventListener('change', () => this.filterRulesets());
+        document.getElementById('filterSubsetWithCards').addEventListener('change', () => this.filterRulesets());
+        
         // 模态框
         document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
         document.getElementById('rulesetModal').addEventListener('click', (e) => {
@@ -249,6 +262,108 @@ class DeckRulesetSystem {
     }
     
     // 检测版本文件夹
+    // 加载卡牌数据
+    async loadCardData(version) {
+        try {
+            console.log(`📦 加载卡牌数据 (版本: ${version})`);
+            
+            // 使用 DataManager 加载卡牌数据
+            const cardData = await window.dataManager.loadFile('CARD', version);
+            const cards = cardData.Records || cardData;
+            
+            if (!Array.isArray(cards)) {
+                console.warn('⚠️ 卡牌数据格式不正确');
+                return;
+            }
+            
+            // 构建卡牌ID到名称的映射
+            cards.forEach(card => {
+                const cardId = card.m_ID || card.ID;
+                const cardName = this.extractLocalizedText(card.m_name) || `卡牌 ${cardId}`;
+                if (cardId) {
+                    this.cardData[cardId] = cardName;
+                }
+            });
+            
+            console.log(`✅ 加载了 ${Object.keys(this.cardData).length} 张卡牌的数据`);
+        } catch (error) {
+            console.warn('⚠️ 无法加载卡牌数据:', error);
+            // 不抛出错误，允许系统继续运行
+        }
+    }
+    
+    // 加载子集卡牌映射
+    async loadSubsetCards(version) {
+        try {
+            console.log(`📦 加载子集卡牌映射 (版本: ${version})`);
+            
+            // 使用 DataManager 加载 SUBSET_CARD 数据
+            const subsetCardData = await window.dataManager.loadFile('SUBSET_CARD', version);
+            const subsetCards = subsetCardData.Records || subsetCardData;
+            
+            if (!Array.isArray(subsetCards)) {
+                console.warn('⚠️ 子集卡牌数据格式不正确');
+                return;
+            }
+            
+            // 构建子集ID到卡牌ID数组的映射
+            this.subsetCards = {};
+            subsetCards.forEach(item => {
+                const subsetId = item.m_SUBSET_ID || item.m_subsetId;
+                const cardId = item.m_CARD_ID || item.m_cardId;
+                
+                if (subsetId && cardId) {
+                    if (!this.subsetCards[subsetId]) {
+                        this.subsetCards[subsetId] = [];
+                    }
+                    this.subsetCards[subsetId].push(cardId);
+                }
+            });
+            
+            console.log(`✅ 加载了 ${Object.keys(this.subsetCards).length} 个子集的卡牌映射`);
+        } catch (error) {
+            console.warn('⚠️ 无法加载子集卡牌映射:', error);
+            // 不抛出错误，允许系统继续运行
+        }
+    }
+    
+    // 提取本地化文本
+    extractLocalizedText(textObj) {
+        if (!textObj) return '';
+        if (typeof textObj === 'string') return textObj;
+        
+        // 优先使用中文
+        const locales = ['zhCN', 'zh_CN', 'enUS', 'en_US'];
+        for (const locale of locales) {
+            if (textObj[locale]) {
+                return textObj[locale];
+            }
+        }
+        
+        // 如果没有匹配的，返回第一个可用值
+        const values = Object.values(textObj);
+        return values.length > 0 ? values[0] : '';
+    }
+    
+    // 根据卡牌ID获取卡牌名称
+    getCardName(cardId) {
+        if (!cardId || cardId === 0) return null;
+        return this.cardData[cardId] || `未知卡牌 (ID: ${cardId})`;
+    }
+    
+    // 根据子集ID获取该子集包含的所有卡牌信息
+    getSubsetCardNames(subsetId) {
+        const cardIds = this.subsetCards[subsetId];
+        if (!cardIds || cardIds.length === 0) {
+            return null;
+        }
+        
+        return cardIds.map(cardId => ({
+            id: cardId,
+            name: this.cardData[cardId] || `未知卡牌 (ID: ${cardId})`
+        }));
+    }
+    
     async detectVersions() {
         console.log('🔍 开始检测版本');
         
@@ -445,6 +560,12 @@ class DeckRulesetSystem {
             await this.loadSubsets(version);
             console.log('✅ 子集定义加载完成:', Object.keys(this.subsets).length);
             
+            this.updateProgress(88, '正在加载卡牌数据...');
+            await this.loadCardData(version);
+            
+            this.updateProgress(92, '正在加载子集卡牌映射...');
+            await this.loadSubsetCards(version);
+            
             this.updateProgress(95, '正在关联数据...');
             this.allRulesets = this.associateData(rulesets, rules, ruleSubsets);
             this.allRules = rules; // 保存原始规则数据用于按规则查看
@@ -627,16 +748,60 @@ class DeckRulesetSystem {
                 <span class="summary-value">${totalRules}</span>
                 <span class="summary-label">规则总数</span>
             </div>
+            <div class="summary-item">
+                <span class="summary-value">${this.allSubsets.length}</span>
+                <span class="summary-label">子集总数</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-value">${this.allSubsetRules.length}</span>
+                <span class="summary-label">子集规则总数</span>
+            </div>
         `;
     }
     
     filterRulesets() {
         const searchText = document.getElementById('searchInput').value.toLowerCase();
         
+        this.pagination.reset(); // 搜索/筛选时重置到第一页
+        
         if (this.viewMode === 'subset') {
             // 按子集查看模式：搜索子集ID
             this.filteredSubsets = this.allSubsets.filter(subset => {
-                return !searchText || subset.m_id.toString().includes(searchText);
+                // 基本搜索过滤
+                if (searchText && !subset.m_id.toString().includes(searchText)) {
+                    return false;
+                }
+                
+                // 应用子集筛选选项
+                const filterWithRules = document.getElementById('filterSubsetWithRules').checked;
+                const filterWithCards = document.getElementById('filterSubsetWithCards').checked;
+                
+                // 如果勾选"有规则映射"（只检查DECK_RULESET_RULE_SUBSET反向关联）
+                if (filterWithRules) {
+                    let hasMapping = false;
+                    for (const ruleset of this.allRulesets) {
+                        for (const rule of ruleset.rules) {
+                            if (rule.subsets && rule.subsets.includes(subset.m_id)) {
+                                hasMapping = true;
+                                break;
+                            }
+                        }
+                        if (hasMapping) break;
+                    }
+                    if (!hasMapping) {
+                        return false;
+                    }
+                }
+                
+                // 如果勾选"有卡牌数据"
+                if (filterWithCards) {
+                    const hasCards = this.subsetCards[subset.m_id] && this.subsetCards[subset.m_id].length > 0;
+                    if (!hasCards) {
+                        return false;
+                    }
+                }
+                
+                return true;
             });
             
             // 排序子集
@@ -719,7 +884,9 @@ class DeckRulesetSystem {
         // 按规则查看模式
         if (this.viewMode === 'rule') {
             if (this.filteredRules.length === 0) {
+                document.getElementById('topPagination').innerHTML = '';
                 container.innerHTML = '<div class="no-results">没有找到符合条件的规则</div>';
+                document.getElementById('bottomPagination').innerHTML = '';
                 return;
             }
             
@@ -728,8 +895,25 @@ class DeckRulesetSystem {
                 displayRules.reverse();
             }
             
-            container.innerHTML = displayRules.map(rule => {
+            // 生成分页控件
+            const topPagination = this.pagination.generate(displayRules.length);
+            const bottomPagination = this.pagination.generate(displayRules.length);
+            
+            // 获取当前页数据
+            const paginatedRules = this.pagination.getPaginatedData(displayRules);
+            
+            const rulesHtml = paginatedRules.map(rule => {
                 const ruleTypeName = this.ruleTypes[rule.m_ruleType] || `未知类型(${rule.m_ruleType})`;
+                
+                // 查找关联的子集数据
+                let subsets = [];
+                for (const ruleset of this.allRulesets) {
+                    const ruleInRuleset = ruleset.rules.find(r => r.id === rule.m_ID);
+                    if (ruleInRuleset && ruleInRuleset.subsets) {
+                        subsets = ruleInRuleset.subsets;
+                        break;
+                    }
+                }
                 
                 return `
                 <div class="ruleset-item" onclick="rulesetSystem.showRuleDetails(${rule.m_ID})" style="cursor: pointer;">
@@ -758,17 +942,33 @@ class DeckRulesetSystem {
                             <span class="stat-value">${rule.m_appliesToSubsetId}</span>
                         </div>
                         ` : ''}
+                        ${subsets.length > 0 ? `
+                        <div class="ruleset-stat">
+                            <span class="stat-label">关联子集:</span>
+                            <span class="stat-value" style="display: flex; flex-wrap: wrap; gap: 4px;">${subsets.map(subsetId => {
+                                const note = this.userNotes.SUBSET[subsetId];
+                                const title = note ? note : '';
+                                return `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 10px; font-size: 12px;" title="${title}" onclick="event.stopPropagation(); rulesetSystem.showSubsetDetails(${subsetId});">🗂️ ${subsetId}</span>`;
+                            }).join('')}</span>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
                 `;
             }).join('');
+            
+            document.getElementById('topPagination').innerHTML = topPagination;
+            container.innerHTML = rulesHtml;
+            document.getElementById('bottomPagination').innerHTML = bottomPagination;
             return;
         }
         
         // 按子集规则查看模式
         if (this.viewMode === 'subsetRule') {
             if (this.filteredSubsetRules.length === 0) {
+                document.getElementById('topPagination').innerHTML = '';
                 container.innerHTML = '<div class="no-results">没有找到符合条件的子集规则</div>';
+                document.getElementById('bottomPagination').innerHTML = '';
                 return;
             }
             
@@ -777,7 +977,14 @@ class DeckRulesetSystem {
                 displaySubsetRules.reverse();
             }
             
-            container.innerHTML = displaySubsetRules.map(rule => {
+            // 生成分页控件
+            const topPagination = this.pagination.generate(displaySubsetRules.length);
+            const bottomPagination = this.pagination.generate(displaySubsetRules.length);
+            
+            // 获取当前页数据
+            const paginatedSubsetRules = this.pagination.getPaginatedData(displaySubsetRules);
+            
+            const subsetRulesHtml = paginatedSubsetRules.map(rule => {
                 const tagName = rule.m_tagId ? (window.getGameTagName ? window.getGameTagName(rule.m_tagId) : rule.m_tagId) : '无';
                 const ruleTypeName = this.subsetRuleTypes ? (this.subsetRuleTypes[rule.m_ruleType] || `类型${rule.m_ruleType}`) : `类型${rule.m_ruleType}`;
                 
@@ -820,13 +1027,19 @@ class DeckRulesetSystem {
                 </div>
                 `;
             }).join('');
+            
+            document.getElementById('topPagination').innerHTML = topPagination;
+            container.innerHTML = subsetRulesHtml;
+            document.getElementById('bottomPagination').innerHTML = bottomPagination;
             return;
         }
         
         // 按子集查看模式
         if (this.viewMode === 'subset') {
             if (this.filteredSubsets.length === 0) {
+                document.getElementById('topPagination').innerHTML = '';
                 container.innerHTML = '<div class="no-results">没有找到符合条件的子集</div>';
+                document.getElementById('bottomPagination').innerHTML = '';
                 return;
             }
             
@@ -835,11 +1048,32 @@ class DeckRulesetSystem {
                 displaySubsets.reverse();
             }
             
-            container.innerHTML = displaySubsets.map(subset => {
+            // 生成分页控件
+            const topPagination = this.pagination.generate(displaySubsets.length);
+            const bottomPagination = this.pagination.generate(displaySubsets.length);
+            
+            // 获取当前页数据
+            const paginatedSubsets = this.pagination.getPaginatedData(displaySubsets);
+            
+            const subsetsHtml = paginatedSubsets.map(subset => {
                 const subsetNote = this.userNotes.SUBSET[subset.m_id] || '';
                 
-                // 查找该子集的所有规则
+                // 查找该子集的所有规则（SUBSET_RULE中的）
                 const subsetRules = this.allSubsetRules.filter(r => r.m_subsetId === subset.m_id);
+                
+                // 查找通过DECK_RULESET_RULE_SUBSET关联的规则
+                const linkedRules = [];
+                for (const ruleset of this.allRulesets) {
+                    for (const rule of ruleset.rules) {
+                        if (rule.subsets && rule.subsets.includes(subset.m_id)) {
+                            linkedRules.push({
+                                id: rule.id,
+                                rulesetId: ruleset.id,
+                                ruleTypeName: rule.ruleTypeName
+                            });
+                        }
+                    }
+                }
                 
                 return `
                 <div class="ruleset-item" onclick="rulesetSystem.showSubsetDetails(${subset.m_id})">
@@ -848,7 +1082,7 @@ class DeckRulesetSystem {
                             子集 ${subset.m_id}
                             ${subsetNote ? `<span style="color: #27ae60; font-size: 13px; margin-left: 8px;">(📝 ${subsetNote})</span>` : ''}
                         </div>
-                        <div class="ruleset-badge">${subsetRules.length} 条规则</div>
+                        <div class="ruleset-badge">${subsetRules.length} 条规则${linkedRules.length > 0 ? ` + ${linkedRules.length} 条映射` : ''}</div>
                     </div>
                     <div class="ruleset-info">
                         <div class="ruleset-stat">
@@ -863,16 +1097,43 @@ class DeckRulesetSystem {
                             <span class="stat-label">规则数量:</span>
                             <span class="stat-value">${subsetRules.length}</span>
                         </div>
+                        ${linkedRules.length > 0 ? `
+                        <div class="ruleset-stat">
+                            <span class="stat-label">规则映射:</span>
+                            <span class="stat-value" style="display: flex; flex-wrap: wrap; gap: 4px;">${linkedRules.slice(0, 5).map(lr => {
+                                const ruleNote = this.userNotes.DECK_RULESET_RULE[lr.id];
+                                const title = ruleNote ? ruleNote : lr.ruleTypeName;
+                                return `<span style="background: #fff3e0; color: #f57c00; padding: 2px 8px; border-radius: 10px; font-size: 12px; cursor: pointer;" title="${title}" onclick="event.stopPropagation(); rulesetSystem.showRuleDetails(${lr.id});">📋 ${lr.id}</span>`;
+                            }).join('')}${linkedRules.length > 5 ? `<span style="color: #999; font-size: 12px;">+${linkedRules.length - 5}更多</span>` : ''}</span>
+                        </div>
+                        ` : ''}
+                        ${(() => {
+                            const subsetCards = this.getSubsetCardNames(subset.m_id);
+                            return subsetCards && subsetCards.length > 0 ? `
+                        <div class="ruleset-stat" style="grid-column: 1 / -1;">
+                            <span class="stat-label">卡牌列表 (${subsetCards.length}张):</span>
+                            <div style="margin-top: 8px; max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 8px; border-radius: 4px;">
+                                ${subsetCards.map(card => `<div style="padding: 4px 0; border-bottom: 1px solid #dee2e6;"><span style="color: #6c757d;">ID ${card.id}:</span> <span style="color: #3498db; font-weight: bold;">${card.name}</span></div>`).join('')}
+                            </div>
+                        </div>
+                        ` : '';
+                        })()}
                     </div>
                 </div>
                 `;
             }).join('');
+            
+            document.getElementById('topPagination').innerHTML = topPagination;
+            container.innerHTML = subsetsHtml;
+            document.getElementById('bottomPagination').innerHTML = bottomPagination;
             return;
         }
         
         // 按规则集查看模式（原有逻辑）
         if (this.filteredRulesets.length === 0) {
+            document.getElementById('topPagination').innerHTML = '';
             container.innerHTML = '<div class="no-results">没有找到符合条件的规则集</div>';
+            document.getElementById('bottomPagination').innerHTML = '';
             return;
         }
         
@@ -881,7 +1142,14 @@ class DeckRulesetSystem {
             displayRulesets.reverse();
         }
         
-        container.innerHTML = displayRulesets.map(ruleset => {
+        // 生成分页控件
+        const topPagination = this.pagination.generate(displayRulesets.length);
+        const bottomPagination = this.pagination.generate(displayRulesets.length);
+        
+        // 获取当前页数据
+        const paginatedRulesets = this.pagination.getPaginatedData(displayRulesets);
+        
+        const rulesetsHtml = paginatedRulesets.map(ruleset => {
             const rulesetNote = this.userNotes.DECK_RULESET[ruleset.id] || '';
             const isSelected = this.selectedRulesets.has(ruleset.id);
             
@@ -942,6 +1210,10 @@ class DeckRulesetSystem {
             `;
             }
         }).join('');
+        
+        document.getElementById('topPagination').innerHTML = topPagination;
+        container.innerHTML = rulesetsHtml;
+        document.getElementById('bottomPagination').innerHTML = bottomPagination;
     }
     
     showRulesetDetails(rulesetId) {
@@ -1066,6 +1338,12 @@ class DeckRulesetSystem {
         
         const currentNote = this.userNotes.SUBSET[subsetId] || '';
         
+        // 查找使用此子集的规则
+        const rulesUsingSubset = this.allRules.filter(rule => 
+            rule.m_appliesToSubsetId === subsetId || 
+            (rule.m_subsets && rule.m_subsets.includes(subsetId))
+        );
+        
         const details = document.getElementById('subsetDetails');
         details.innerHTML = `
             <div class="ruleset-details-info">
@@ -1077,6 +1355,14 @@ class DeckRulesetSystem {
                     <div class="info-item">
                         <strong>资产标志:</strong> ${subset.m_assetFlags || 'N/A'}
                     </div>
+                    ${rulesUsingSubset.length > 0 ? `
+                    <div class="info-item" style="grid-column: 1 / -1;">
+                        <strong>使用此子集的规则:</strong> 
+                        <button onclick="rulesetSystem.showRulesUsingSubset(${subsetId})" style="margin-left: 10px; padding: 5px 12px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                            📋 查看 ${rulesUsingSubset.length} 条规则
+                        </button>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
             
@@ -1090,6 +1376,8 @@ class DeckRulesetSystem {
                 <div class="rule-list">
                     ${this.subsetRules[subsetId] && this.subsetRules[subsetId].length > 0 ? this.subsetRules[subsetId].map((rule, index) => {
                         const ruleTypeName = this.subsetRuleTypes[rule.m_ruleType] || `未知类型(${rule.m_ruleType})`;
+                        // 如果是卡牌数据库ID规则（类型3），获取该子集包含的所有卡牌
+                        const subsetCards = (rule.m_ruleType === 3) ? this.getSubsetCardNames(subsetId) : null;
                         return `
                             <div class="rule-list-item">
                                 <div class="rule-header">
@@ -1117,6 +1405,14 @@ class DeckRulesetSystem {
                                     ${rule.m_intValue !== undefined ? `
                                         <div class="rule-detail-item">
                                             <strong>整数值:</strong> ${rule.m_intValue}
+                                        </div>
+                                    ` : ''}
+                                    ${subsetCards && subsetCards.length > 0 ? `
+                                        <div class="rule-detail-item">
+                                            <strong>包含卡牌 (${subsetCards.length} 张):</strong>
+                                            <div style="margin-top: 8px; max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                                                ${subsetCards.map(card => `<div style="padding: 4px 0; border-bottom: 1px solid #dee2e6;"><span style="color: #6c757d;">ID ${card.id}:</span> <span style="color: #3498db; font-weight: bold;">${card.name}</span></div>`).join('')}
+                                            </div>
                                         </div>
                                     ` : ''}
                                     ${rule.m_stringValue ? `
@@ -1148,6 +1444,75 @@ class DeckRulesetSystem {
     
     closeSubsetModal() {
         document.getElementById('subsetModal').style.display = 'none';
+    }
+    
+    // 显示使用指定子集的所有规则
+    showRulesUsingSubset(subsetId) {
+        const rulesUsingSubset = this.allRules.filter(rule => 
+            rule.m_appliesToSubsetId === subsetId || 
+            (rule.m_subsets && rule.m_subsets.includes(subsetId))
+        );
+        
+        if (rulesUsingSubset.length === 0) {
+            alert(`没有规则使用子集 ${subsetId}`);
+            return;
+        }
+        
+        // 创建弹窗HTML
+        const modalHtml = `
+            <div id="rulesUsingSubsetModal" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+                <div style="background: white; padding: 30px; border-radius: 8px; max-width: 800px; max-height: 80vh; overflow-y: auto; width: 90%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="margin: 0; color: #2c3e50;">📋 使用子集 ${subsetId} 的规则</h3>
+                        <button onclick="rulesetSystem.closeRulesUsingSubsetModal()" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">✖ 关闭</button>
+                    </div>
+                    <div style="color: #7f8c8d; margin-bottom: 15px;">共 ${rulesUsingSubset.length} 条规则使用此子集</div>
+                    <div style="display: grid; gap: 12px;">
+                        ${rulesUsingSubset.map(rule => {
+                            const ruleTypeName = this.ruleTypes[rule.m_ruleType] || `未知类型(${rule.m_ruleType})`;
+                            return `
+                                <div onclick="rulesetSystem.showRuleDetailsFromSubsetModal(${rule.m_ID})" style="background: #f8f9fa; padding: 15px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='#3498db'; this.style.background='#e3f2fd';" onmouseout="this.style.borderColor='transparent'; this.style.background='#f8f9fa';">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <strong style="color: #2c3e50; font-size: 15px;">规则 #${rule.m_ID}</strong>
+                                        <span style="background: #3498db; color: white; padding: 3px 8px; border-radius: 3px; font-size: 12px;">${ruleTypeName}</span>
+                                    </div>
+                                    <div style="font-size: 13px; color: #7f8c8d;">
+                                        ${rule.m_appliesToSubsetId ? `应用于子集: ${rule.m_appliesToSubsetId}` : ''}
+                                        ${rule.m_tagId ? ` | 标签: ${rule.m_tagId}` : ''}
+                                        ${rule.m_minValue !== undefined || rule.m_maxValue !== undefined ? ` | 范围: ${rule.m_minValue ?? 0} - ${rule.m_maxValue ?? 0}` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 移除旧的弹窗（如果存在）
+        const oldModal = document.getElementById('rulesUsingSubsetModal');
+        if (oldModal) {
+            oldModal.remove();
+        }
+        
+        // 添加新弹窗
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    // 关闭规则列表弹窗
+    closeRulesUsingSubsetModal() {
+        const modal = document.getElementById('rulesUsingSubsetModal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+    
+    // 从子集规则列表弹窗中显示规则详情
+    showRuleDetailsFromSubsetModal(ruleId) {
+        // 先关闭规则列表弹窗
+        this.closeRulesUsingSubsetModal();
+        // 显示规则详情
+        this.showRuleDetails(ruleId);
     }
     
     saveSubsetNote(subsetId, silent = false) {
@@ -1769,12 +2134,19 @@ class DeckRulesetSystem {
             this.showProgressSection();
             
             // 加载旧版本数据
-            this.updateProgress(25, '正在加载旧版本子集...');
+            this.updateProgress(20, '正在加载旧版本子集...');
             this.oldVersionSubsets = await this.loadVersionSubsets(oldVersion);
             
             // 加载新版本数据
-            this.updateProgress(60, '正在加载新版本子集...');
+            this.updateProgress(50, '正在加载新版本子集...');
             this.newVersionSubsets = await this.loadVersionSubsets(newVersion);
+            
+            // 加载卡牌数据（使用新版本）
+            this.updateProgress(70, '正在加载卡牌数据...');
+            await this.loadCardData(newVersion);
+            
+            this.updateProgress(75, '正在加载子集卡牌映射...');
+            await this.loadSubsetCards(newVersion);
             
             // 对比数据
             this.updateProgress(90, '正在对比数据...');
@@ -2384,12 +2756,19 @@ class DeckRulesetSystem {
             this.showProgressSection();
             
             // 加载旧版本子集规则
-            this.updateProgress(25, '正在加载旧版本子集规则...');
+            this.updateProgress(20, '正在加载旧版本子集规则...');
             const oldSubsetRules = await this.loadVersionSubsetRules(oldVersion);
             
             // 加载新版本子集规则
-            this.updateProgress(60, '正在加载新版本子集规则...');
+            this.updateProgress(50, '正在加载新版本子集规则...');
             const newSubsetRules = await this.loadVersionSubsetRules(newVersion);
+            
+            // 加载卡牌数据（使用新版本）
+            this.updateProgress(70, '正在加载卡牌数据...');
+            await this.loadCardData(newVersion);
+            
+            this.updateProgress(75, '正在加载子集卡牌映射...');
+            await this.loadSubsetCards(newVersion);
             
             // 对比数据
             this.updateProgress(90, '正在对比数据...');
@@ -2648,26 +3027,41 @@ class DeckRulesetSystem {
             
             // 如果传入的是数字ID，则查找对应的规则
             if (typeof ruleParam === 'number') {
-                // 从原始规则数据中查找
-                const rawRule = this.allRules.find(r => r.m_ID === ruleParam);
-                if (!rawRule) {
-                    alert('未找到规则ID: ' + ruleParam);
-                    return;
+                // 从关联数据中查找（包含subsets信息）
+                let foundRule = null;
+                for (const ruleset of this.allRulesets) {
+                    const ruleInRuleset = ruleset.rules.find(r => r.id === ruleParam);
+                    if (ruleInRuleset) {
+                        foundRule = ruleInRuleset;
+                        break;
+                    }
                 }
                 
-                // 转换为显示格式
-                rule = {
-                    id: rawRule.m_ID,
-                    subsetId: rawRule.m_appliesToSubsetId || 0,
-                    ruleType: rawRule.m_ruleType,
-                    ruleTypeName: this.ruleTypes[rawRule.m_ruleType] || `未知类型(${rawRule.m_ruleType})`,
-                    ruleIsNot: rawRule.m_ruleIsNot,
-                    tagId: rawRule.m_tagId,
-                    minValue: rawRule.m_minValue,
-                    maxValue: rawRule.m_maxValue,
-                    intValue: rawRule.m_intValue,
-                    stringValue: rawRule.m_stringValue
-                };
+                // 如果在关联数据中找不到，从原始数据查找
+                if (!foundRule) {
+                    const rawRule = this.allRules.find(r => r.m_ID === ruleParam);
+                    if (!rawRule) {
+                        alert('未找到规则ID: ' + ruleParam);
+                        return;
+                    }
+                    
+                    // 转换为显示格式
+                    foundRule = {
+                        id: rawRule.m_ID,
+                        subsetId: rawRule.m_appliesToSubsetId || 0,
+                        ruleType: rawRule.m_ruleType,
+                        ruleTypeName: this.ruleTypes[rawRule.m_ruleType] || `未知类型(${rawRule.m_ruleType})`,
+                        ruleIsNot: rawRule.m_ruleIsNot,
+                        tagId: rawRule.m_tagId,
+                        minValue: rawRule.m_minValue,
+                        maxValue: rawRule.m_maxValue,
+                        intValue: rawRule.m_intValue,
+                        stringValue: rawRule.m_stringValue,
+                        subsets: []
+                    };
+                }
+                
+                rule = foundRule;
             } else {
                 // 如果传入的是对象，直接使用
                 rule = ruleParam;
@@ -2683,6 +3077,25 @@ class DeckRulesetSystem {
                         <div style="margin-bottom: 12px;"><strong>规则类型:</strong> ${rule.ruleTypeName} (${rule.ruleType})</div>
                         <div style="margin-bottom: 12px;"><strong>取反:</strong> ${rule.ruleIsNot ? '✅ 是' : '❌ 否'}</div>
             `;
+            
+            // 显示关联的子集
+            if (rule.subsets && rule.subsets.length > 0) {
+                detailsHtml += `
+                    <div style="margin-bottom: 12px;">
+                        <strong>关联子集:</strong>
+                        <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${rule.subsets.map(subsetId => `
+                                <span class="subset-link-in-modal" data-subset-id="${subsetId}" 
+                                      style="background: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 12px; cursor: pointer; font-size: 13px; border: 1px solid #90caf9; transition: all 0.2s;"
+                                      onmouseover="this.style.background='#1976d2'; this.style.color='white';"
+                                      onmouseout="this.style.background='#e3f2fd'; this.style.color='#1976d2';">
+                                    🗂️ ${subsetId}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
             
             // 显示标签信息（可点击）
             if (rule.tagId) {
@@ -2748,6 +3161,18 @@ class DeckRulesetSystem {
                     ruleModal.style.display = 'none';
                     // 显示标签详情
                     this.showTagDetails(tagId);
+                });
+            });
+            
+            // 为模态框内的子集链接添加点击事件
+            ruleModal.querySelectorAll('.subset-link-in-modal').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const subsetId = parseInt(link.getAttribute('data-subset-id'));
+                    // 先关闭规则详情模态框
+                    ruleModal.style.display = 'none';
+                    // 显示子集详情
+                    this.showSubsetDetails(subsetId);
                 });
             });
             
@@ -2823,6 +3248,18 @@ class DeckRulesetSystem {
         console.log(`📊 allSubsetRules 数量: ${this.allSubsetRules.length}`);
         
         this.viewMode = mode;
+        this.pagination.reset(); // 切换模式时重置到第一页
+        
+        // 显示/隐藏子集筛选选项
+        const subsetFilterWithRulesLabel = document.getElementById('subsetFilterWithRulesLabel');
+        const subsetFilterWithCardsLabel = document.getElementById('subsetFilterWithCardsLabel');
+        if (mode === 'subset') {
+            subsetFilterWithRulesLabel.style.display = 'flex';
+            subsetFilterWithCardsLabel.style.display = 'flex';
+        } else {
+            subsetFilterWithRulesLabel.style.display = 'none';
+            subsetFilterWithCardsLabel.style.display = 'none';
+        }
         
         // 更新按钮状态
         const rulesetBtn = document.getElementById('viewByRulesetBtn');
