@@ -28,6 +28,13 @@ class DeckRulesetSystem {
         this.newVersionSubsets = []; // 新版本子集数据
         this.oldVersionRulesets = []; // 旧版本规则集数据
         this.newVersionRulesets = []; // 新版本规则集数据
+        // 子集规则分页状态
+        this.subsetRulesPagination = {
+            currentPage: 1,
+            pageSize: 50,
+            totalRules: 0
+        };
+        this.expandedRules = new Set(); // 记录已展开的规则ID
         // 初始化通用分页组件
         this.pagination = new Pagination({
             pageSize: 20,
@@ -1344,6 +1351,10 @@ class DeckRulesetSystem {
             (rule.m_subsets && rule.m_subsets.includes(subsetId))
         );
         
+        // 重置分页状态和展开状态
+        this.subsetRulesPagination.currentPage = 1;
+        this.expandedRules.clear();
+        
         const details = document.getElementById('subsetDetails');
         details.innerHTML = `
             <div class="ruleset-details-info">
@@ -1373,63 +1384,15 @@ class DeckRulesetSystem {
             
             <div class="ruleset-details-rules">
                 <h4>子集规则</h4>
-                <div class="rule-list">
-                    ${this.subsetRules[subsetId] && this.subsetRules[subsetId].length > 0 ? this.subsetRules[subsetId].map((rule, index) => {
-                        const ruleTypeName = this.subsetRuleTypes[rule.m_ruleType] || `未知类型(${rule.m_ruleType})`;
-                        // 如果是卡牌数据库ID规则（类型3），获取该子集包含的所有卡牌
-                        const subsetCards = (rule.m_ruleType === 3) ? this.getSubsetCardNames(subsetId) : null;
-                        return `
-                            <div class="rule-list-item">
-                                <div class="rule-header">
-                                    <span class="rule-id">子集规则 #${rule.m_ID}</span>
-                                    <span class="rule-type">${ruleTypeName}</span>
-                                </div>
-                                <div class="rule-details">
-                                    <div class="rule-detail-item">
-                                        <strong>规则ID:</strong> ${rule.m_ID}
-                                        &nbsp;&nbsp;
-                                        <strong>子集ID:</strong> ${rule.m_subsetId}
-                                    </div>
-                                    ${rule.m_tagId !== undefined ? `
-                                        <div class="rule-detail-item">
-                                            <strong>标签:</strong> ${window.formatGameTag ? window.formatGameTag(rule.m_tagId) : rule.m_tagId}
-                                        </div>
-                                    ` : ''}
-                                    ${rule.m_minValue !== undefined || rule.m_maxValue !== undefined ? `
-                                        <div class="rule-detail-item">
-                                            <strong>最小值:</strong> ${rule.m_minValue !== undefined ? rule.m_minValue : 'N/A'}
-                                            &nbsp;&nbsp;
-                                            <strong>最大值:</strong> ${rule.m_maxValue !== undefined ? rule.m_maxValue : 'N/A'}
-                                        </div>
-                                    ` : ''}
-                                    ${rule.m_intValue !== undefined ? `
-                                        <div class="rule-detail-item">
-                                            <strong>整数值:</strong> ${rule.m_intValue}
-                                        </div>
-                                    ` : ''}
-                                    ${subsetCards && subsetCards.length > 0 ? `
-                                        <div class="rule-detail-item">
-                                            <strong>包含卡牌 (${subsetCards.length} 张):</strong>
-                                            <div style="margin-top: 8px; max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px;">
-                                                ${subsetCards.map(card => `<div style="padding: 4px 0; border-bottom: 1px solid #dee2e6;"><span style="color: #6c757d;">ID ${card.id}:</span> <span style="color: #3498db; font-weight: bold;">${card.name}</span></div>`).join('')}
-                                            </div>
-                                        </div>
-                                    ` : ''}
-                                    ${rule.m_stringValue ? `
-                                        <div class="rule-detail-item">
-                                            <strong>字符串值:</strong> ${rule.m_stringValue}
-                                        </div>
-                                    ` : ''}
-                                    <div class="rule-detail-item">
-                                        <strong>反转规则:</strong> ${rule.m_ruleIsNot ? '是' : '否'}
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('') : '<p style="color: #6c757d; text-align: center; padding: 20px;">该子集没有规则</p>'}
+                <div id="subsetRulesContainer" class="rule-list">
+                    <!-- 规则列表将通过 renderSubsetRulesPage 方法动态渲染 -->
                 </div>
+                <div id="subsetRulesPagination" style="margin-top: 15px;"></div>
             </div>
         `;
+        
+        // 渲染第一页规则
+        this.renderSubsetRulesPage(subsetId);
         
         document.getElementById('subsetModal').style.display = 'block';
         
@@ -1442,8 +1405,241 @@ class DeckRulesetSystem {
         }
     }
     
+    // 分页渲染子集规则
+    renderSubsetRulesPage(subsetId) {
+        const rules = this.subsetRules[subsetId] || [];
+        const container = document.getElementById('subsetRulesContainer');
+        const paginationContainer = document.getElementById('subsetRulesPagination');
+        
+        if (!container) return;
+        
+        if (rules.length === 0) {
+            container.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 20px;">该子集没有规则</p>';
+            paginationContainer.innerHTML = '';
+            return;
+        }
+        
+        this.subsetRulesPagination.totalRules = rules.length;
+        const { currentPage, pageSize } = this.subsetRulesPagination;
+        const totalPages = Math.ceil(rules.length / pageSize);
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = Math.min(startIndex + pageSize, rules.length);
+        const pageRules = rules.slice(startIndex, endIndex);
+        
+        // 使用文档片段优化DOM操作
+        const fragment = document.createDocumentFragment();
+        
+        pageRules.forEach(rule => {
+            const ruleDiv = document.createElement('div');
+            ruleDiv.className = 'rule-list-item';
+            ruleDiv.innerHTML = this.renderSubsetRuleItem(rule, subsetId);
+            fragment.appendChild(ruleDiv);
+        });
+        
+        container.innerHTML = '';
+        container.appendChild(fragment);
+        
+        // 渲染分页控件
+        this.renderSubsetRulesPagination(subsetId, currentPage, totalPages, rules.length);
+    }
+    
+    // 渲染单个子集规则项（优化版，支持懒加载）
+    renderSubsetRuleItem(rule, subsetId) {
+        const ruleTypeName = this.subsetRuleTypes[rule.m_ruleType] || `未知类型(${rule.m_ruleType})`;
+        const isExpanded = this.expandedRules.has(rule.m_ID);
+        
+        // 基础信息始终显示
+        let html = `
+            <div class="rule-header">
+                <span class="rule-id">子集规则 #${rule.m_ID}</span>
+                <span class="rule-type">${ruleTypeName}</span>
+            </div>
+            <div class="rule-details">
+                <div class="rule-detail-item">
+                    <strong>规则ID:</strong> ${rule.m_ID}
+                    &nbsp;&nbsp;
+                    <strong>子集ID:</strong> ${rule.m_subsetId}
+                </div>
+        `;
+        
+        // 标签信息
+        if (rule.m_tagId !== undefined) {
+            html += `
+                <div class="rule-detail-item">
+                    <strong>标签:</strong> ${window.formatGameTag ? window.formatGameTag(rule.m_tagId) : rule.m_tagId}
+                </div>
+            `;
+        }
+        
+        // 数值范围
+        if (rule.m_minValue !== undefined || rule.m_maxValue !== undefined) {
+            html += `
+                <div class="rule-detail-item">
+                    <strong>最小值:</strong> ${rule.m_minValue !== undefined ? rule.m_minValue : 'N/A'}
+                    &nbsp;&nbsp;
+                    <strong>最大值:</strong> ${rule.m_maxValue !== undefined ? rule.m_maxValue : 'N/A'}
+                </div>
+            `;
+        }
+        
+        // 整数值
+        if (rule.m_intValue !== undefined) {
+            html += `
+                <div class="rule-detail-item">
+                    <strong>整数值:</strong> ${rule.m_intValue}
+                </div>
+            `;
+        }
+        
+        // 字符串值
+        if (rule.m_stringValue) {
+            html += `
+                <div class="rule-detail-item">
+                    <strong>字符串值:</strong> ${rule.m_stringValue}
+                </div>
+            `;
+        }
+        
+        // 反转规则
+        html += `
+            <div class="rule-detail-item">
+                <strong>反转规则:</strong> ${rule.m_ruleIsNot ? '是' : '否'}
+            </div>
+        `;
+        
+        // 卡牌信息（懒加载）
+        if (rule.m_ruleType === 3) {
+            const cardIds = this.subsetCards[subsetId];
+            const cardCount = cardIds ? cardIds.length : 0;
+            
+            if (cardCount > 0) {
+                html += `
+                    <div class="rule-detail-item">
+                        <strong>包含卡牌 (${cardCount} 张):</strong>
+                        <button 
+                            onclick="rulesetSystem.toggleSubsetCards(${rule.m_ID}, ${subsetId})"
+                            style="margin-left: 10px; padding: 4px 10px; background: ${isExpanded ? '#e74c3c' : '#3498db'}; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;"
+                        >
+                            ${isExpanded ? '🔼 收起' : '🔽 展开'}
+                        </button>
+                        <div id="cards-${rule.m_ID}" style="display: ${isExpanded ? 'block' : 'none'}; margin-top: 8px; max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                            ${isExpanded ? this.renderSubsetCards(subsetId) : ''}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    // 渲染子集卡牌列表
+    renderSubsetCards(subsetId) {
+        const subsetCards = this.getSubsetCardNames(subsetId);
+        if (!subsetCards || subsetCards.length === 0) {
+            return '<p style="color: #6c757d; text-align: center; padding: 10px;">没有卡牌数据</p>';
+        }
+        
+        return subsetCards.map(card => 
+            `<div style="padding: 4px 0; border-bottom: 1px solid #dee2e6;">
+                <span style="color: #6c757d;">ID ${card.id}:</span> 
+                <span style="color: #3498db; font-weight: bold;">${card.name}</span>
+            </div>`
+        ).join('');
+    }
+    
+    // 切换卡牌显示
+    toggleSubsetCards(ruleId, subsetId) {
+        const cardsContainer = document.getElementById(`cards-${ruleId}`);
+        if (!cardsContainer) return;
+        
+        const isExpanded = this.expandedRules.has(ruleId);
+        
+        if (isExpanded) {
+            // 收起
+            this.expandedRules.delete(ruleId);
+            cardsContainer.style.display = 'none';
+            cardsContainer.innerHTML = '';
+        } else {
+            // 展开并加载数据
+            this.expandedRules.add(ruleId);
+            cardsContainer.style.display = 'block';
+            cardsContainer.innerHTML = this.renderSubsetCards(subsetId);
+        }
+        
+        // 更新按钮状态
+        const button = cardsContainer.previousElementSibling;
+        if (button && button.tagName === 'BUTTON') {
+            button.textContent = isExpanded ? '🔽 展开' : '🔼 收起';
+            button.style.background = isExpanded ? '#3498db' : '#e74c3c';
+        }
+    }
+    
+    // 渲染子集规则分页控件
+    renderSubsetRulesPagination(subsetId, currentPage, totalPages, totalRules) {
+        const container = document.getElementById('subsetRulesPagination');
+        if (!container || totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+        
+        const startIndex = (currentPage - 1) * this.subsetRulesPagination.pageSize + 1;
+        const endIndex = Math.min(currentPage * this.subsetRulesPagination.pageSize, totalRules);
+        
+        let html = `
+            <div style="display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button 
+                    onclick="rulesetSystem.changeSubsetRulePage(${subsetId}, 1)"
+                    ${currentPage === 1 ? 'disabled' : ''}
+                    style="padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;"
+                >⏮️ 首页</button>
+                <button 
+                    onclick="rulesetSystem.changeSubsetRulePage(${subsetId}, ${currentPage - 1})"
+                    ${currentPage === 1 ? 'disabled' : ''}
+                    style="padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;"
+                >⬅️ 上一页</button>
+                
+                <span style="color: #6c757d; font-size: 14px;">
+                    第 ${currentPage} / ${totalPages} 页 (显示 ${startIndex}-${endIndex} / 共 ${totalRules} 条)
+                </span>
+                
+                <button 
+                    onclick="rulesetSystem.changeSubsetRulePage(${subsetId}, ${currentPage + 1})"
+                    ${currentPage === totalPages ? 'disabled' : ''}
+                    style="padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;"
+                >➡️ 下一页</button>
+                <button 
+                    onclick="rulesetSystem.changeSubsetRulePage(${subsetId}, ${totalPages})"
+                    ${currentPage === totalPages ? 'disabled' : ''}
+                    style="padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;"
+                >⏭️ 末页</button>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+    }
+    
+    // 切换子集规则页
+    changeSubsetRulePage(subsetId, page) {
+        const totalPages = Math.ceil(this.subsetRulesPagination.totalRules / this.subsetRulesPagination.pageSize);
+        if (page < 1 || page > totalPages) return;
+        
+        this.subsetRulesPagination.currentPage = page;
+        this.renderSubsetRulesPage(subsetId);
+        
+        // 滚动到规则列表顶部
+        const container = document.getElementById('subsetRulesContainer');
+        if (container) {
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+    
     closeSubsetModal() {
         document.getElementById('subsetModal').style.display = 'none';
+        // 清理状态
+        this.expandedRules.clear();
+        this.subsetRulesPagination.currentPage = 1;
     }
     
     // 显示使用指定子集的所有规则
